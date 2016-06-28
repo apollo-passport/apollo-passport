@@ -24,16 +24,10 @@ class ApolloPassport {
     if (!verify)
       verify = this.dbRequire(name, 'verify');
 
-    const verifyWrapper = function(...args) {
-      verify(...args, this);
-    }
-
-    const instance = new Strategy(options, verifyWrapper);
+    const instance = new Strategy(options, verify.bind(this));
     passport.use(instance);
 
     //this._strategies.set(instance.name, instance);
-
-    console.log('use', name, options, verify, instance);
   }
 
   require(strategy, module) {

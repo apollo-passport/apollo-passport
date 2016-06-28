@@ -1,8 +1,8 @@
 export default class RethinkDBHashDriver {
 
   constructor(dbOptions, userTableName) {
-    const r = dbOptions;
-    this.users = r.table(userTableName);
+    this.r = dbOptions;
+    this.users = this.r.table(userTableName);
   }
 
 }
