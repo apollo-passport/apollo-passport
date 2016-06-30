@@ -20,6 +20,8 @@ class ApolloPassport {
     if (!jwtSecret && !options.createTokenFromUser)
       throw new Error("no jwtSecret nor a custom createTokenFromUser specified");
 
+    this._useJwt = true;
+
     this._strategies = new Map();
     this._winston = options.winston || require('winston');
 
@@ -72,6 +74,38 @@ class ApolloPassport {
   expressMiddleware(path = '/ap-auth') {
     return function ApolloPassportExpressMiddleware(req, res, next) {
       console.log('!!!', req.url);
+    }
+  }
+
+  wrapOptions(options) {
+    var self = this;
+
+    return async function (req) {
+      if (!req.headers.authorization)
+        return options;
+
+      const token = req.headers.authorization.substr(0, 7) === 'Bearer '
+        && req.headers.authorization.substr(7);
+
+      if (!token)
+        return options;
+
+      console.log('token', token);
+
+      let decoded;
+      try {
+        decoded = jwt.verify(token, self.jwtSecret);
+        console.log('decoded', decoded);
+      } catch (err) {
+        // JsonWebTokenError: invalid token
+        console.log('err', err);
+        return options;
+      }
+
+      return {
+        ...options,
+        context: { jwt: decoded }
+      };
     }
   }
 

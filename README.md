@@ -52,6 +52,9 @@ apolloPassport.getResolvers();
 apolloPassport.getSchema();
 
 app.use('/ap-auth', apolloPassport.expressMiddleware());
+
+// XXX
+app.use('/graphql', apolloServer(apolloPassport.wrapOptions(apolloOptions)));
 ```
 
 **Client**
