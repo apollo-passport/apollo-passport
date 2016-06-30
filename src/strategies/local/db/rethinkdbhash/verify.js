@@ -1,15 +1,15 @@
 export default function verify(email, password, done) {
-  this.db.users.filter(
-    this.db.r.row('emails').contains({ address: email })
-  ).limit(1).run().then(user => {
+  this.db.users
+    .filter(this.db.r.row('emails').contains({ address: email }))
+    .limit(1)
+    .run()
+    .then(users => {
+      const user = users[0];
+      
+      if (!users)
+        return done(null, false);
 
-    console.log(email, password, user);
-
-    if (!user)
-      done(null, false);
-
-    if (user)
+      // TODO verify password
       done(null, user);
-
-  }).catch(err => done(err));
+    }).catch(err => done(err));
 }

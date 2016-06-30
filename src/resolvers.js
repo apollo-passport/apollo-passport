@@ -7,12 +7,16 @@ const resolvers = {
       return new Promise((resolve, reject) => {
 
         passport.authenticate('local', (err, user, info) => {
-          console.log('callback', err, user, info);
 
-          resolve({
-            loginToken: null
-          });
-        })({ query: args });
+          if (err)
+            return reject(err);
+
+          if (!user || info)
+            return resolve({ error: info, token: "" });
+
+          resolve({ error: "", token: this.createTokenFromUser(user) });
+
+        })({ query: args }); // fake req.query using args from graphQL
 
       });
     }

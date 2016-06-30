@@ -6,20 +6,22 @@ Copyright (c) 2016 by Gadi Cohen, released under an MIT license.
 
 ## Features
 
-* Authentication in GraphQL, not the framework.  This means:
+* Super fast start with (optionally) opinionated with packaged resolvers for common tasks and databases.
+* JSON Web Tokens (JWTs) for stateless "sessions" making database user lookups on every query optional.
 
-  * Server framework agnostic: works with Express, and plans for Koa, Hapi, etc (if supported by Apollo)
+* User interaction via GraphQL, not the framework.
+
   * Great for SPAs (single page apps) - no reloading or redirects to login; visible progress hints in UI.
   * Re-uses your existing transports.
   * No need for cookies and a cookie-free domain.
-
-* Optionally opinionated with packaged resolvers for common tasks and databases.
 
 ## In Development
 
 I'm still writing this.  Not everything mentioned in the README exists yet.  Not everything may work.  Most importantly, until a 1.0.0 release, NO SECURITY AUDIT HAS TAKEN PLACE.
 
-Also, I don't really have time to support this ;)  I'm using this, and it will work for whatever I need it for, but I'm hoping that anyone who uses this - especially at this stage - is interested in actively contributing to the project.
+Also, I probably won't have time to support this ;)  I'm using this, and it will work for whatever I need it for, but I'm hoping that anyone who uses this - especially at this stage - is interested in actively contributing to the project.  I hope to create a good starting point for community development.
+
+Lastly, this is my first time using passport, apollo/graphql and JWT, so PRs for better practices are welcome.
 
 ## Getting Started
 
@@ -27,7 +29,7 @@ Also, I don't really have time to support this ;)  I'm using this, and it will w
 $ npm i --save apollo-passport passport passport-local # etc
 ```
 
-### Setup Option 1: Easy (recommended)
+### Quick Start
 
 Inspired by Meteor's account system, apollo-passport (optionally) comes with everything you need to get started quickly: an opinionated database structure, resolvers for various databases, and the pre-built UI components (currently via react+redux) to interact with the user and even configure provider settings.
 
@@ -38,7 +40,8 @@ import ApolloPassport from 'apollo-passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 
 const apolloPassport = new ApolloPassport({
-  db: [ 'rethinkdbhash', r ]
+  db: [ 'rethinkdbhash', r ],
+  jwtSecret: 'my special secret' // will be optional/automatic in the future
 });
 
 // Pass the class, not the instance (i.e. no NEW), and no options for defaults
@@ -65,6 +68,35 @@ const SomewhereInMyApp = () => (
 );
 ```
 
+## API
+
+### Server
+
+#### new ApolloPassport(options)
+
+Instantiates a new ApolloPassport instance for your app, with the given options.
+
+**Required Options**
+
+* **db**: [ "dbName", dbInstance ]
+
+  This is required for the default simple setup, but is not required if you provide your own passport verify functions.
+
+* **jwtSecret**
+
+  Required for now.  Will be created automatically and stored in the database in the future if not specified.  Also not required if the user providers their own verify functions.  Or we'll default to old style login tokens stored in the DB and fetch the user on each query.
+
+**Customization Options**
+
+* **userTableName**
+* **mapUserToJWTProps**
+* **createTokenFromUser**
+* **winston**
+
+#### apolloPassport.use('strategyName', StrategyClass, <options>, <verifyCallback>)
+
+
+
 ## Roadmap
 
 * log user auths with ability for admins to see last x logins, failures, etc.
@@ -83,5 +115,5 @@ Might switch to a different package for each strategy, allows for static analysi
 
 * Meteor accounts
   * until Meteor 1.5, lots of deps on pure Meteor packages
-  * need to restructure deps on Blaze, Mongo, etc.
+  * need to restructure deps on Blaze, Mongo, DDP, pub/sub, etc.
   * less active development

@@ -1,6 +1,7 @@
 const typeDefinitions = `
 type PassportResult {
-  loginToken: String
+  error: String,
+  token: String
 }
 
 type RootMutation {

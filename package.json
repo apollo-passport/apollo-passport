@@ -41,6 +41,7 @@
     ]
   },
   "dependencies": {
+    "jsonwebtoken": "^7.0.1",
     "jsx-control-statements": "^3.1.2"
   }
 }
