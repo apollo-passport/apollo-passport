@@ -1,7 +1,7 @@
 {
   "name": "apollo-passport",
   "version": "0.0.1",
-  "description": "Babel skeleton / boilerplate for NPM packages",
+  "description": "Apollo authentication via PassportJS and JWTs, with UI",
   "main": "lib/index.js",
   "scripts": {
     "compile": "babel -d lib/ src/",
@@ -15,10 +15,10 @@
     "url": "gitrepo"
   },
   "keywords": [
-    "babel",
-    "es6",
-    "boilerplate",
-    "skeleton"
+    "apollo",
+    "passport",
+    "auth",
+    "authentication"
   ],
   "author": "Gadi Cohen",
   "license": "MIT",
