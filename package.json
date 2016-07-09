@@ -31,7 +31,10 @@
     "eslint-plugin-jsx-control-statements": "^2.1.1",
     "eslint-plugin-react": "^5.1.1",
     "mocha": "^2.5.3",
-    "sinon": "^1.17.4"
+    "regenerator-runtime": "^0.9.5",
+    "rethinkdbdash": "^2.3.16",
+    "sinon": "^1.17.4",
+    "sinon-chai": "^2.8.0"
   },
   "peerDependencies": {
     "graphql-tag": "^0.1.7",

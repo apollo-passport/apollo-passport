@@ -4,11 +4,11 @@ export default function verify(email, password, done) {
     .limit(1)
     .run()
     .then(users => {
-      const user = users[0];
-      
-      if (!users)
+      if (!users.length)
         return done(null, false);
 
+      const user = users[0];
+      
       // TODO verify password
       done(null, user);
     }).catch(err => done(err));

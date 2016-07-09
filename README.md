@@ -98,7 +98,12 @@ Instantiates a new ApolloPassport instance for your app, with the given options.
 
 #### apolloPassport.use('strategyName', StrategyClass, <options>, <verifyCallback>)
 
+## TODO
 
+* tests
+* login
+* pluggable interface to allow other packages to provide/replace e.g. react ui login.
+* change internal resolve() to search first for installed packages e.g. apollo-passport-facebook (note, no need for an apollo-passport- copy of every package; we look at the inerhitted class for e.g. oauth2).
 
 ## Roadmap
 
