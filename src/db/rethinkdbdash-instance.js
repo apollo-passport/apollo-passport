@@ -12,7 +12,7 @@ async function freshUserTable() {
   try {
     await r.tableDrop('users').run();
   } catch (err) {
-    if (err.msg !== 'Table `test.users` does not exist')
+    if (err.msg !== 'Table `test.users` does not exist.')
       throw err;
   }
 
