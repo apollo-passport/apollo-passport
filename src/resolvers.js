@@ -1,5 +1,7 @@
 import passport from 'passport';
 
+// TODO needs to move to local dir / package
+
 const resolvers = {
 
   RootMutation: {
