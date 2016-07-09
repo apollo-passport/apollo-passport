@@ -1,15 +1,14 @@
 // This file is only used for testing, will work with cirlceci in future
 
+const host = process.env.RETHINKDB_HOST || '127.0.0.1';
+const port = process.env.RETHINKDB_PORT || 28015;
+
 const r = require('rethinkdbdash')({
   db: "test",
-  servers: [
-    { host: '172.17.0.2', port: 28015 }
-  ]
+  servers: [ { host, port } ]
 });
 
 async function freshUserTable() {
-  console.log('freshUserTable');
-
   try {
     await r.tableDrop('users').run();
   } catch (err) {
