@@ -1,7 +1,8 @@
 const typeDefinitions = `
 type PassportResult {
   error: String,
-  token: String
+  token: String,
+  userId: String
 }
 
 type RootMutation {

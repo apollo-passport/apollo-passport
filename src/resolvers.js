@@ -12,9 +12,13 @@ const resolvers = {
             return reject(err);
 
           if (!user || info)
-            return resolve({ error: info, token: "" });
+            return resolve({ error: info, token: "", userId: "" });
 
-          resolve({ error: "", token: this.createTokenFromUser(user) });
+          resolve({
+            error: "",
+            token: this.createTokenFromUser(user),
+            userId: this.mapUserToUserId(user)
+          });
 
         })({ query: args }); // fake req.query using args from graphQL
 

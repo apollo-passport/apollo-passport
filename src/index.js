@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 
 // http://www.iana.org/assignments/jwt/jwt.xhtml
 const defaultMapUserToJWTProps = user => ({ userId: user.id });
+const defaultMapUserToUserId = user => user.id;
 
 function defaultCreateTokenFromUser(user) {
   return jwt.sign(
@@ -34,6 +35,7 @@ class ApolloPassport {
     this.jwtSecret = jwtSecret;
     this.mapUserToJWTProps = options.mapUserToJWTProps || defaultMapUserToJWTProps;
     this.createTokenFromUser = options.createTokenFromUser || defaultCreateTokenFromUser;
+    this.mapUserToUserId = options.mapUserToUserId || defaultMapUserToUserId;
   }
 
   use(name, Strategy, options, verify) {
@@ -97,7 +99,10 @@ class ApolloPassport {
         decoded = jwt.verify(token, self.jwtSecret);
         console.log('decoded', decoded);
       } catch (err) {
+        // This could be any number of reasons but in short: user not authed.
+        // Maybe pass the error to context so we can send back to client.
         // JsonWebTokenError: invalid token
+        // TokenExpiredError: jwt expired
         console.log('err', err);
         return options;
       }
