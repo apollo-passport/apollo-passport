@@ -37,14 +37,20 @@
     "eslint": "^2.10.2",
     "eslint-plugin-jsx-control-statements": "^2.1.1",
     "eslint-plugin-react": "^5.1.1",
+    "graphql-tag": "^0.1.9",
     "istanbul": "^1.1.0-alpha.1",
     "mocha": "^2.5.3",
     "mocha-lcov-reporter": "^1.2.0",
+    "passport": "^0.3.2",
+    "passport-local": "^1.0.0",
     "proxyquire": "^1.7.10",
+    "react": "^15.2.1",
+    "react-dom": "^15.2.1",
     "regenerator-runtime": "^0.9.5",
     "rethinkdbdash": "^2.3.16",
     "sinon": "^1.17.4",
-    "sinon-chai": "^2.8.0"
+    "sinon-chai": "^2.8.0",
+    "winston": "^2.2.0"
   },
   "peerDependencies": {
     "graphql-tag": "^0.1.7",
