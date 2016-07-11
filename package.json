@@ -12,7 +12,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "gitrepo"
+    "url": "https://github.com/gadicc/apollo-passport"
+  },
+  "bugs": {
+    "url": "https://github.com/gadicc/apollo-passport/issues"
   },
   "keywords": [
     "apollo",
@@ -44,8 +47,6 @@
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "proxyquire": "^1.7.10",
-    "react": "^15.2.1",
-    "react-dom": "^15.2.1",
     "regenerator-runtime": "^0.9.5",
     "rethinkdbdash": "^2.3.16",
     "sinon": "^1.17.4",
@@ -55,12 +56,9 @@
   "peerDependencies": {
     "graphql-tag": "^0.1.7",
     "winston": "^2.2.0",
-    "regenerator-runtime": "^0.9.5",
-    "react": "^15.1.0",
-    "react-dom": "^15.1.0"
+    "regenerator-runtime": "^0.9.5"
   },
   "dependencies": {
-    "jsonwebtoken": "^7.0.1",
-    "jsx-control-statements": "^3.1.2"
+    "jsonwebtoken": "^7.0.1"
   }
 }

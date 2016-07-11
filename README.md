@@ -9,7 +9,7 @@ Copyright (c) 2016 by Gadi Cohen, released under the MIT license.
 
 ## Features
 
-* Super fast start with (optionally) opinionated with packaged resolvers for common tasks and databases.
+* Super fast start with (optionally) opinionated, packaged resolvers for common tasks and databases.
 * JSON Web Tokens (JWTs) for stateless "sessions" making database user lookups on every query optional.
 
 * User interaction via GraphQL, not the framework.
@@ -17,6 +17,10 @@ Copyright (c) 2016 by Gadi Cohen, released under the MIT license.
   * Great for SPAs (single page apps) - no reloading or redirects to login; visible progress hints in UI.
   * Re-uses your existing transports.
   * No need for cookies and a cookie-free domain.
+
+* Current database support (PRs welcome, it's very modular):
+
+  * RethinkDB
 
 ## In Development
 
@@ -48,31 +52,63 @@ const apolloPassport = new ApolloPassport({
 });
 
 // Pass the class, not the instance (i.e. no NEW), and no options for defaults
+// Make sure you setup strategies BEFORE calling getSchema, getResolvers below.
 apolloPassport.use('local', LocalStrategy);
 
-// Merge these into your Apollo config (this will improve)
-apolloPassport.getResolvers();
-apolloPassport.getSchema();
+// Merge these into your Apollo config however you usually do...
+const apolloOptions = {
+  schema: apolloPassport.getSchema(),
+  resolvers: apolloPassport.getResolvers();
+};
+
+app.use('/graphql', apolloServer(apolloPassport.wrapOptions(apolloOptions)));
 
 app.use('/ap-auth', apolloPassport.expressMiddleware());
-
-// XXX
-app.use('/graphql', apolloServer(apolloPassport.wrapOptions(apolloOptions)));
 ```
 
-**Client**
+**Client config**
 
 ```js
-import ApolloPassport from 'apollo-passport/client';
-import ApolloPassportContainer from 'apollo-passport/ui/react';
+// Configure Apollo
+import ApolloClient, { createNetworkInterface } from 'apollo-client';
+import ApolloPassport from 'apollo-passport/lib/client';
+import apMiddleware from 'apollo-passport/lib/client/middleware';
 
-// integrate into NetworkInterface
-ApolloPassport...
+const networkInterface = createNetworkInterface('/graphql');
+networkInterface.use([ apMiddleware ]);
+
+const apolloClient = new ApolloClient({
+  networkInterface
+});
+
+const apolloPassport = new ApolloPassport({ apolloClient });
+
+// However you usuallly do this...
+Redux.addReducer('apollo', apolloClient.reducer());
+Redux.addMiddleware('apollo', apolloClient.middleware());
+
+export { apolloClient, apolloPassport };
+```
+
+**Client usage**:
+
+If you are using Redux, use this setup:
+
+**Client usage (without Redux)**:
+
+```sh
+$ npm i --save apollo-passport-react
+```
+
+```js
+import { LoginButtons } from 'apollo-passport/lib/client/react-ui';
 
 const SomewhereInMyApp = () => (
-  <ApolloPassportContainer />
+  <LoginButtons />
 );
 ```
+
+See [apollo-passport-react](https://www.npmjs.com/package/apollo-passport-react) for more details.
 
 ## API
 
