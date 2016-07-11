@@ -111,7 +111,7 @@ class ApolloPassport {
         return action.state;
 
       // I guess this is anti-pattern in Redux but I like to populate the
-      // value without a dispatch.
+      // initial value without a dispatch.
       return state || self.getState();
     }
   }
@@ -120,7 +120,7 @@ class ApolloPassport {
     var self = this;
     return function apolloPassportMiddleware(store) {
       self.store = store;
-      
+
       self.subscribe(state => {
         self.store.dispatch({
           type: 'APOLLO_PASSPORT_UPDATE',
