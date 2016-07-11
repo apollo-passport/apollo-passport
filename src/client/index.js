@@ -23,6 +23,9 @@ class ApolloPassport {
   constructor({ apolloClient }) {
     this.apolloClient = apolloClient;
 
+    // Redux support.  This gets set this apolloClient.middleware().
+    this.store = null;
+
     this._subscribers = new Set();
 
     this._token = localStorage.getItem('apToken');
@@ -36,6 +39,8 @@ class ApolloPassport {
   assertToken() {
 
   }
+
+  /* actions */
 
   async loginWithEmail(email, password) {
     const result = await this.apolloClient.mutate({
@@ -61,6 +66,21 @@ class ApolloPassport {
 
   }
 
+  // if it's not reactive does this make any sense?  can get from state.
+  userId() {
+    return this._userId;
+  }
+
+  logout() {
+    localStorage.removeItem('apToken');
+    localStorage.removeItem('apUserId');
+    delete this._userId;
+
+    this.emitState();
+  }
+
+  /* state */
+
   getState() {
     return {
       userId: this._userId,
@@ -81,17 +101,37 @@ class ApolloPassport {
     this._subscribers.forEach(callback => callback(state));
   }
 
-  // if it's not reactive does this make any sense?
-  userId() {
-    return this._userId;
+  /* optional redux support */
+
+  reducer() {
+    var self = this;
+
+    return function apolloPassportReducer(state, action) {
+      if (action.type === 'APOLLO_PASSPORT_UPDATE')
+        return action.state;
+
+      // I guess this is anti-pattern in Redux but I like to populate the
+      // value without a dispatch.
+      return state || self.getState();
+    }
   }
 
-  logout() {
-    localStorage.removeItem('apToken');
-    localStorage.removeItem('apUserId');
-    delete this._userId;
+  middleware() {
+    var self = this;
+    return function apolloPassportMiddleware(store) {
+      self.store = store;
+      
+      self.subscribe(state => {
+        self.store.dispatch({
+          type: 'APOLLO_PASSPORT_UPDATE',
+          state: state
+        });
+      });
 
-    this.emitState();
+      // Don't do anything special, we just use middleware to get our store
+      // with the same API as Apollo.
+      return next => action => next(action);
+    }
   }
 }
 

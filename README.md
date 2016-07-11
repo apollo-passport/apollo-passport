@@ -77,24 +77,25 @@ import apMiddleware from 'apollo-passport/lib/client/middleware';
 const networkInterface = createNetworkInterface('/graphql');
 networkInterface.use([ apMiddleware ]);
 
-const apolloClient = new ApolloClient({
-  networkInterface
-});
-
+const apolloClient = new ApolloClient({ networkInterface });
 const apolloPassport = new ApolloPassport({ apolloClient });
 
-// However you usuallly do this...
-Redux.addReducer('apollo', apolloClient.reducer());
-Redux.addMiddleware('apollo', apolloClient.middleware());
+// Optional, if you use Redux... (combine with apollo's reducers & middleware)
+const store = createStore(
+  combineReducers({
+    apollo: apolloClient.reducer(),
+    auth: apolloPassport.reducer()
+  }),
+  applyMiddleware(
+    apolloClient.middleware(),
+    apolloPassport.middleware()
+  )
+);
 
 export { apolloClient, apolloPassport };
 ```
 
 **Client usage**:
-
-If you are using Redux, use this setup:
-
-**Client usage (without Redux)**:
 
 ```sh
 $ npm i --save apollo-passport-react
