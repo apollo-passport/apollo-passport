@@ -59,6 +59,8 @@
     "regenerator-runtime": "^0.9.5"
   },
   "dependencies": {
-    "jsonwebtoken": "^7.0.1"
+    "bcrypt": "^0.8.7",
+    "jsonwebtoken": "^7.0.1",
+    "sha.js": "^2.4.5"
   }
 }

@@ -8,8 +8,8 @@ export default function verify(email, password, done) {
         return done(null, false);
 
       const user = users[0];
-      
-      // TODO verify password
-      done(null, user);
+      this.comparePassword(password, user.password, (err, match) => {
+        err ? done(err) : done(null, match ? user : false);
+      });
     }).catch(err => done(err));
 }

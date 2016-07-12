@@ -1,4 +1,5 @@
 import gql from 'graphql-tag';
+import createHash from 'sha.js';
 
 // check and warn if regenerator-runtime not installed / present
 
@@ -45,7 +46,10 @@ class ApolloPassport {
   async loginWithEmail(email, password) {
     const result = await this.apolloClient.mutate({
       mutation,
-      variables: { email, password }
+      variables: {
+        email,
+        password: createHash('sha256').update(password).digest('hex')
+      }
     });
 
     // if error...

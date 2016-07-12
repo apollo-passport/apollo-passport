@@ -1,8 +1,15 @@
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
 
+// TODO XXX
+// !!! move all login stuff to local module (remove bcrypt dep...) 
+import bcrypt from 'bcrypt';
+const BCRYPT_SALT_ROUNDS=10;
+
+// Non-standard, see
 // http://www.iana.org/assignments/jwt/jwt.xhtml
 const defaultMapUserToJWTProps = user => ({ userId: user.id });
+
 const defaultMapUserToUserId = user => user.id;
 
 function defaultCreateTokenFromUser(user) {
@@ -125,6 +132,28 @@ class ApolloPassport {
         out[key] = obj[key];
       }
     return out;
+  }
+
+  /* --- local, TODO, move --- */
+
+  hashPassword(password, cb) {
+    if (cb)
+      return bcrypt.hash(password, BCRYPT_SALT_ROUNDS, cb);
+
+    return new Promise((resolve, reject) => {
+      bcrypt.hash(password, BCRYPT_SALT_ROUNDS,
+        (err, res) => { err ? reject(err) : resolve(res) });
+    });
+  }
+
+  comparePassword(password, hash, cb) {
+    if (cb)
+      return bcrypt.compare(password, hash, cb);
+
+    return new Promise((resolve, reject) => {
+      bcrypt.compare(password, hash,
+        (err, res) => { err ? reject(err) : resolve(res) });
+    });
   }
 }
 

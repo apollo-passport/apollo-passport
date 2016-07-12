@@ -102,10 +102,14 @@ $ npm i --save apollo-passport-react
 ```
 
 ```js
-import { LoginButtons } from 'apollo-passport/lib/client/react-ui';
+import { LoginButtons } from 'apollo-passport-react';
+import 'apollo-passport-react/style/login_buttons.less';
+
+// From the file above...
+import { apolloPassport } from '../../../lib/apollo';
 
 const SomewhereInMyApp = () => (
-  <LoginButtons />
+  <LoginButtons apolloPassport={apolloPassport} />
 );
 ```
 
@@ -165,3 +169,8 @@ Might switch to a different package for each strategy, allows for static analysi
   * until Meteor 1.5, lots of deps on pure Meteor packages
   * need to restructure deps on Blaze, Mongo, DDP, pub/sub, etc.
   * less active development
+
+**However**
+
+Besides for PassportJS and JWTs, Meteor Accounts has a looot of stuff we
+should consider re-using... UI, validation flow, etc.
