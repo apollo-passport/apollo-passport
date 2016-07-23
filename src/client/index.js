@@ -1,6 +1,17 @@
 import gql from 'graphql-tag';
 import createHash from 'sha.js';
 
+/*
+
+TODO
+
+  - I decided to send the userId in addition to the token to avoid the need to
+    also bundle the jwt library on the client.  If we did do that though, we
+    could also know in advance if the token is expired... and get other info
+    from the token.  Think about it.
+
+*/
+
 // check and warn if regenerator-runtime not installed / present
 
 const mutation = gql`
@@ -29,10 +40,10 @@ class ApolloPassport {
 
     this._subscribers = new Set();
 
-    this._token = localStorage.getItem('apToken');
-    this._userId = localStorage.getItem('apUserId');
-    this._verified = false;
+    // Set initial values
+    this.setState(true);
 
+    this._token = localStorage.getItem('apToken');
     if (this._token)
       this.assertToken();
   }
@@ -52,18 +63,18 @@ class ApolloPassport {
       }
     });
 
-    // if error...
+    if (result.errors) {
+      console.error("A server side error was thrown during the Apollo Passport GraphQL query:");
+      console.error(result.errors);
+      return;
+      // should we still update state?
+    }
 
     const queryResult = result.data.passportLoginEmail;
 
-    if (queryResult.error)
-      throw new Error(queryResult.error);
-
     localStorage.setItem('apToken', queryResult.token);
     localStorage.setItem('apUserId', queryResult.userId);
-    this._userId = queryResult.userId;
-
-    this.emitState();
+    this.setState(queryResult);
   }
 
   signupWithEmail(email, password) {
@@ -72,24 +83,50 @@ class ApolloPassport {
 
   // if it's not reactive does this make any sense?  can get from state.
   userId() {
-    return this._userId;
+    return this._state.userId;
   }
 
   logout() {
     localStorage.removeItem('apToken');
     localStorage.removeItem('apUserId');
-    delete this._userId;
-
-    this.emitState();
+    this.setState({ userId: '', verified: false, error: null });
   }
 
   /* state */
 
+  stateHash(state) {
+    return JSON.stringify(state || this._state);
+  }
+
+  setState(nextState) {
+    if (!this._state) {
+      this._state = {
+        userId: localStorage.getItem('apUserId'),
+        verified: false,
+        error: null
+      };
+      this._stateHash = this.stateHash();
+    }
+
+    // Just set initial values and exit, used in constructor
+    if (nextState === true)
+      return;
+
+    const nextStateHash = this.stateHash(nextState);
+    const hasChanged = this._stateHash !== nextStateHash;
+
+    if (hasChanged) {
+      this._state = nextState;
+      this._stateHash = nextStateHash;
+
+      // XXX todo debounce
+      this.emitState();
+    }
+
+  }
+
   getState() {
-    return {
-      userId: this._userId,
-      verified: this._verified
-    };
+    return this._state;
   }
 
   subscribe(callback) {

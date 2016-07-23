@@ -5,11 +5,16 @@ export default function verify(email, password, done) {
     .run()
     .then(users => {
       if (!users.length)
-        return done(null, false);
+        return done(null, false, "Invalid email");
 
       const user = users[0];
       this.comparePassword(password, user.password, (err, match) => {
-        err ? done(err) : done(null, match ? user : false);
+        if (err)
+          done(err);
+        else if (match)
+          done(null, user);
+        else
+          done(null, false, "Invalid password");
       });
     }).catch(err => done(err));
 }
