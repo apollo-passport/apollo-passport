@@ -44,8 +44,10 @@ class ApolloPassport {
     this.setState(true);
 
     this._token = localStorage.getItem('apToken');
-    if (this._token)
-      this.assertToken();
+    if (this._token) {
+      // constructor is a synchronous method, queue this for after.
+      setTimeout(() => { this.assertToken() }, 1);
+    }
   }
 
   assertToken() {
@@ -54,6 +56,7 @@ class ApolloPassport {
 
   /* actions */
 
+  // TODO needs to move to 'local' package
   async loginWithEmail(email, password) {
     const result = await this.apolloClient.mutate({
       mutation,
@@ -72,9 +75,10 @@ class ApolloPassport {
 
     const queryResult = result.data.passportLoginEmail;
 
+    // TODO needs a generalized method outside of local
     localStorage.setItem('apToken', queryResult.token);
     localStorage.setItem('apUserId', queryResult.userId);
-    this.setState(queryResult);
+    this.setState({ userId: queryResult.userId, verified: true, error: null });
   }
 
   signupWithEmail(email, password) {
