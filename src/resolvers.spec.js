@@ -37,6 +37,34 @@ const resolvers = proxyquire('./resolvers', { passport: passportStub }).default;
 
 describe('resolvers', () => {
 
+  describe('passportStub', () => {
+
+    it('throws on missing or invalid values', () => {
+
+      (function() {
+        passportStub.authenticate()();
+      }).should.throw();
+
+      (function() {
+        passportStub.authenticate()({});
+      }).should.throw();
+
+      (function() {
+        passportStub.authenticate()({ query: {} });
+      }).should.throw();
+
+      (function() {
+        passportStub.authenticate()({ query: { override: 'error' }});
+      }).should.throw();
+
+      (function() {
+        passportStub.authenticate()({ query: { override: 'invalid' }});
+      }).should.throw();
+
+    });
+
+  });
+
   describe('local', () => {
 
     describe('passportLoginEmail', () => {
