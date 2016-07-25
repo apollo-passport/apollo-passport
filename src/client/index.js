@@ -68,7 +68,11 @@ class ApolloPassport {
 
     // TODO needs a generalized method outside of local
     localStorage.setItem('apToken', queryResult.token);
-    this.setState({ data: data, verified: true, error: null });
+    this.setState({
+      data: data,
+      verified: !!queryResult.token,
+      error: queryResult.error || null
+    });
   }
 
   signupWithEmail(email, password) {
