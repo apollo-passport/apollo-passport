@@ -29,7 +29,6 @@ const passportStub = {
 }
 
 const context = {
-  mapUserToUserId: user => user.id,
   createTokenFromUser: () => 'token'
 };
 
@@ -81,14 +80,12 @@ describe('resolvers', () => {
         const result = await passportLoginEmail(null, { override: 'user' });
         result.error.should.equal("");
         result.token.should.equal('token');
-        result.userId.should.equal(1);
       });
 
       it('passes an error string (not a throw)', async () => {
         const result = await passportLoginEmail(null, { override: 'info' });
         result.error.should.equal("info");
         result.token.should.equal("");
-        result.userId.should.equal("");
       });
 
     });

@@ -1,16 +1,6 @@
 import gql from 'graphql-tag';
 import createHash from 'sha.js';
-
-/*
-
-TODO
-
-  - I decided to send the userId in addition to the token to avoid the need to
-    also bundle the jwt library on the client.  If we did do that though, we
-    could also know in advance if the token is expired... and get other info
-    from the token.  Think about it.
-
-*/
+import jwtDecode from 'jwt-decode';
 
 // check and warn if regenerator-runtime not installed / present
 
@@ -25,7 +15,6 @@ mutation login (
   ) {
     error
     token
-    userId
   }
 }
 `;
@@ -35,15 +24,16 @@ class ApolloPassport {
   constructor({ apolloClient }) {
     this.apolloClient = apolloClient;
 
+    this._subscribers = new Set();
+
     // Redux support.  This gets set this apolloClient.middleware().
     this.store = null;
 
-    this._subscribers = new Set();
+    this._token = localStorage.getItem('apToken');
 
     // Set initial values
     this.setState(true);
 
-    this._token = localStorage.getItem('apToken');
     if (this._token) {
       // constructor is a synchronous method, queue this for after.
       setTimeout(() => { this.assertToken() }, 1);
@@ -74,26 +64,20 @@ class ApolloPassport {
     }
 
     const queryResult = result.data.passportLoginEmail;
+    const data = queryResult.token ? jwtDecode(queryResult.token) : {};
 
     // TODO needs a generalized method outside of local
     localStorage.setItem('apToken', queryResult.token);
-    localStorage.setItem('apUserId', queryResult.userId);
-    this.setState({ userId: queryResult.userId, verified: true, error: null });
+    this.setState({ data: data, verified: true, error: null });
   }
 
   signupWithEmail(email, password) {
 
   }
 
-  // if it's not reactive does this make any sense?  can get from state.
-  userId() {
-    return this._state.userId;
-  }
-
   logout() {
     localStorage.removeItem('apToken');
-    localStorage.removeItem('apUserId');
-    this.setState({ userId: '', verified: false, error: null });
+    this.setState({ data: {}, verified: false, error: null });
   }
 
   /* state */
@@ -105,7 +89,7 @@ class ApolloPassport {
   setState(nextState) {
     if (!this._state) {
       this._state = {
-        userId: localStorage.getItem('apUserId'),
+        data: this._token ? jwtDecode(this._token) : {},
         verified: false,
         error: null
       };

@@ -2,6 +2,13 @@ import ApolloPassport from './index';
 import chai from 'chai';
 import 'regenerator-runtime/runtime';
 
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ';
+const decodedToken = {
+  "sub": "1234567890",
+  "name": "John Doe",
+  "admin": true
+};
+
 global.window = global;
 const localStorage = window.localStorage = {
   items: {},
@@ -24,10 +31,10 @@ describe('ApolloPassport - client', () => {
     });
 
     it('runs assertToken if a token exists in localStorage', (done) => {
-      localStorage.setItem('apToken', 'a');
+      localStorage.setItem('apToken', token);
       const ap = new ApolloPassport({});
       ap.assertToken = function() {
-        ap._token.should.equal('a');
+        ap._token.should.equal(token);
         done();
       };
     });
@@ -68,9 +75,7 @@ describe('ApolloPassport - client', () => {
             return new Promise(resolve => {
               resolve({
                 data: {
-                  passportLoginEmail: {
-                    userId: 'a'
-                  }
+                  passportLoginEmail: { token }
                 }
               });
             });
@@ -80,7 +85,7 @@ describe('ApolloPassport - client', () => {
         const ap = new ApolloPassport({ apolloClient });
         ap.loginWithEmail('a', 'b').then(() => {
           ap.getState().should.deep.equal({
-            userId: 'a',
+            data: decodedToken,
             verified: true,
             error: null
           });
@@ -91,23 +96,16 @@ describe('ApolloPassport - client', () => {
 
     });
 
-    it('userId()', () => {
-      const ap = new ApolloPassport({});
-      ap.setState({ userId: 'a', verified: true, error: null });
-      ap.userId().should.equal('a');
-    });
-
     it('logout() clears state & local storage', () => {
       const ap = new ApolloPassport({});
 
       localStorage.setItem('apToken', 'a');
-      localStorage.setItem('apUserId', 'b');
-      ap.setState({ userId: 'b', verified: true, error: null });
+      ap.setState({ data: decodedToken, verified: true, error: null });
 
       ap.logout();
 
       const state = ap.getState();
-      state.userId.should.equal('');
+      state.data.should.deep.equal({});
       state.verified.should.be.false;
     });
 
@@ -172,7 +170,7 @@ describe('ApolloPassport - client', () => {
 
         const ap = new ApolloPassport({});
         const middleware = ap.middleware();
-        const nextState = { userId: 'a', verified: true, error: null };
+        const nextState = { data: {}, verified: true, error: null };
         const store = {
           dispatch(action) {
             action.type.should.equal('APOLLO_PASSPORT_UPDATE');

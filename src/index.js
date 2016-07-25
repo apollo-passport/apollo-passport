@@ -10,8 +10,6 @@ const BCRYPT_SALT_ROUNDS=10;
 // http://www.iana.org/assignments/jwt/jwt.xhtml
 const defaultMapUserToJWTProps = user => ({ userId: user.id });
 
-const defaultMapUserToUserId = user => user.id;
-
 function defaultCreateTokenFromUser(user) {
   return jwt.sign(
     this.mapUserToJWTProps(user),
@@ -42,7 +40,6 @@ class ApolloPassport {
     this.jwtSecret = jwtSecret;
     this.mapUserToJWTProps = options.mapUserToJWTProps || defaultMapUserToJWTProps;
     this.createTokenFromUser = options.createTokenFromUser || defaultCreateTokenFromUser;
-    this.mapUserToUserId = options.mapUserToUserId || defaultMapUserToUserId;
   }
 
   use(name, Strategy, options, verify) {
