@@ -1,10 +1,11 @@
+import path from 'path';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
+import { mergeResolvers, mergeSchemas } from './utils/graphql-merge';
+import _ from 'lodash';
 
-// TODO XXX
-// !!! move all login stuff to local module (remove bcrypt dep...) 
-import bcrypt from 'bcrypt';
-const BCRYPT_SALT_ROUNDS=10;
+// Some super weird babel thing going on here, where path is not defined.
+const _path = path;
 
 // Non-standard, see
 // http://www.iana.org/assignments/jwt/jwt.xhtml
@@ -28,8 +29,11 @@ class ApolloPassport {
 
     this._useJwt = true;
 
-    this._strategies = new Map();
+    this.strategies = {};
     this._winston = options.winston || require('winston');
+    this._resolvers = require('./resolvers').default;
+    this._schema = require('./schema').default;
+    this.passport = passport;
 
     this.dbName = options.db[0];
     const userTableName = options.userTableName || 'users';
@@ -55,26 +59,82 @@ class ApolloPassport {
 
     const instance = new Strategy(options, verify.bind(this));
     passport.use(instance);
-
     //this._strategies.set(instance.name, instance);
+
+    const apWrapper = this.require(name, 'index');
+    this.strategies[name] = new apWrapper(this);
+
+    const resolvers = this.require(name, 'resolvers');
+    this._resolvers = mergeResolvers(this._resolvers, resolvers);
+
+    const schema = this.require(name, 'schema');
+    this._schema = [ mergeSchemas([this._schema[0], schema[0]]) ];
+
+    // would also be nice to have a root query for available strategies
+    // that could be used by the UI, and whether they are configured.
+  }
+
+  extendWith(obj) {
+    _.extend(this, obj);
+  }
+
+  /* resolve, require */
+
+  resolve(module) {
+    try {
+      return require.resolve(module);
+    } catch (err) {
+      if (err.message === `Cannot find module '${module}'`) {
+
+        /*
+         * node resolves symlinks so that packages from npm link won't find
+         * their own modules.  https://github.com/npm/npm/issues/5875
+         * This is a small hack to make dev work easier.
+         */
+        if (module.charAt(0) !== '.') {
+          const relative = _path.join(__dirname, '..', '..', module);
+          try {
+            return require.resolve(relative);
+          } catch (err) {
+            if (err.message !== `Cannot find module '${relative}'`)
+              throw err;
+            return null;
+          }
+        }
+
+        return null;
+      }
+      throw new err;
+    }
   }
 
   require(strategy, module) {
     // No static analysis, but that's ok for server side
-    let loaded = require(`./strategies/${strategy}/${module}`);
-    return loaded.default;
+    const fromPackage = `apollo-passport-${strategy}/lib/${module}`;
+    
+    let resolved = this.resolve(fromPackage);
+    if (!resolved)
+      resolved = this.resolve(`./strategies/${strategy}/${module}`);
+    if (!resolved)
+      throw new Error(`Cannot find '${fromPackage}'.  `
+        + `Try 'npm i --save apollo-passport-${strategy}'.`);
+
+    const loaded = require(resolved);
+    return loaded.__esModule ? loaded.default : loaded;
   }
 
   dbRequire(strategy, module) {
     return this.require(strategy, `db/${this.dbName}/${module}`);
   }
 
+  /* graphql, apollo */
+
   schema() {
-    return require('./schema').default;
+    return this._schema;
   }
 
   resolvers() {
-    return this._bindRootMutations(require('./resolvers').default);
+    return this._bindRootMutations(this._resolvers);
   }
 
   expressMiddleware(path = '/ap-auth') {
@@ -131,27 +191,6 @@ class ApolloPassport {
     return out;
   }
 
-  /* --- local, TODO, move --- */
-
-  hashPassword(password, cb) {
-    if (cb)
-      return bcrypt.hash(password, BCRYPT_SALT_ROUNDS, cb);
-
-    return new Promise((resolve, reject) => {
-      bcrypt.hash(password, BCRYPT_SALT_ROUNDS,
-        (err, res) => { err ? reject(err) : resolve(res) });
-    });
-  }
-
-  comparePassword(password, hash, cb) {
-    if (cb)
-      return bcrypt.compare(password, hash, cb);
-
-    return new Promise((resolve, reject) => {
-      bcrypt.compare(password, hash,
-        (err, res) => { err ? reject(err) : resolve(res) });
-    });
-  }
 }
 
 export default ApolloPassport;

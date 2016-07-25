@@ -41,58 +41,58 @@ describe('ApolloPassport - client', () => {
 
   });
 
+  describe('- modules', () => {
+
+    it('can be used', () => {
+      const ap = new ApolloPassport({});
+      const TestStrategy = function() {};
+      ap.use('test', TestStrategy);
+      ap.strategies.test.should.be.an.instanceof(TestStrategy);
+    });
+
+    it('can extend the instance', () => {
+      const ap = new ApolloPassport({});
+      const methods = { a: {} };
+      ap.extendWith(methods);
+      ap.a.should.equal(methods.a);
+    });
+
+  });
+
   describe('- actions -', () => {
 
-    describe('loginWithEmail()', () => {
+    it('loginStart()', () => {
 
-      it('handles errors', (done) => {
-        const apolloClient = {
-          mutate() {
-            return new Promise(resolve => {
-              resolve({
-                errors: [
-                  {
-                    // think this is right, double check TODO
-                    location: '',
-                    message: 'an error'
-                  }
-                ]
-              });
-            });
+    });
+
+    describe('loginComplete()', () => {
+
+      it('handles errors', () => {
+        const ap = new ApolloPassport({});
+        const result = {
+          errors: []
+        };
+
+        ap.loginComplete(result, 'unused');
+        // Nothing to test for for now.
+      });
+
+      it('sets state', () => {
+        const ap = new ApolloPassport({});
+        const result = {
+          data: {
+            passportLoginEmail: { token }
           }
         };
 
-        const ap = new ApolloPassport({ apolloClient });
-        ap.loginWithEmail('a', 'b').then(() => {
-          // Nothing to test for for now.
-          done();
+        ap.loginComplete(result, 'passportLoginEmail');
+        ap.getState().should.deep.equal({
+          data: decodedToken,
+          verified: true,
+          error: null
         });
       });
 
-      it('sets state', (done) => {
-        const apolloClient = {
-          mutate() {
-            return new Promise(resolve => {
-              resolve({
-                data: {
-                  passportLoginEmail: { token }
-                }
-              });
-            });
-          }
-        };
-
-        const ap = new ApolloPassport({ apolloClient });
-        ap.loginWithEmail('a', 'b').then(() => {
-          ap.getState().should.deep.equal({
-            data: decodedToken,
-            verified: true,
-            error: null
-          });
-          done();
-        });
-
-      });
 
     });
 

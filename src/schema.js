@@ -6,7 +6,6 @@ type PassportResult {
 }
 
 type RootMutation {
-  passportLoginEmail (email: String!, password: String!): PassportResult
 }
 `;
 

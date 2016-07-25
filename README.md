@@ -9,7 +9,7 @@ Copyright (c) 2016 by Gadi Cohen, released under the MIT license.
 
 ## Features
 
-* Super fast start with (optionally) opinionated, packaged resolvers for common tasks and databases.
+* Super fast start with optional, opinionated resolvers for common tasks and databases.
 * JSON Web Tokens (JWTs) for stateless "sessions" making database user lookups on every query optional.
 
 * User interaction via GraphQL, not the framework.
@@ -38,7 +38,7 @@ $ npm i --save apollo-passport passport passport-local # etc
 
 ### Quick Start
 
-Inspired by Meteor's account system, apollo-passport (optionally) comes with everything you need to get started quickly: an opinionated database structure, resolvers for various databases, and the pre-built UI components (currently via react+redux) to interact with the user and even configure provider settings.
+Inspired by Meteor's account system, apollo-passport (optionally) comes with everything you need to get started quickly: an opinionated database structure, resolvers for various databases, and the pre-built UI components (just for react, for now) to interact with the user and even configure provider settings.
 
 **Server entry point**
 
@@ -72,6 +72,7 @@ app.use('/ap-auth', apolloPassport.expressMiddleware());
 // Configure Apollo
 import ApolloClient, { createNetworkInterface } from 'apollo-client';
 import ApolloPassport from 'apollo-passport/lib/client';
+import ApolloPassportLocal from 'apollo-passport-local/client';
 import apMiddleware from 'apollo-passport/lib/client/middleware';
 
 const networkInterface = createNetworkInterface('/graphql');
@@ -79,6 +80,8 @@ networkInterface.use([ apMiddleware ]);
 
 const apolloClient = new ApolloClient({ networkInterface });
 const apolloPassport = new ApolloPassport({ apolloClient });
+
+apolloPassport.use('local', ApolloPassportLocal);
 
 // Optional, if you use Redux... (combine with apollo's reducers & middleware)
 const store = createStore(

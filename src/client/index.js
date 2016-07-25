@@ -1,23 +1,7 @@
-import gql from 'graphql-tag';
-import createHash from 'sha.js';
 import jwtDecode from 'jwt-decode';
+import _ from 'lodash';
 
-// check and warn if regenerator-runtime not installed / present
-
-const mutation = gql`
-mutation login (
-  $email: String!
-  $password: String!
-) {
-  passportLoginEmail (
-    email: $email
-    password: $password
-  ) {
-    error
-    token
-  }
-}
-`;
+// TODO check and warn if regenerator-runtime not installed / present
 
 class ApolloPassport {
 
@@ -25,6 +9,7 @@ class ApolloPassport {
     this.apolloClient = apolloClient;
 
     this._subscribers = new Set();
+    this.strategies = {};
 
     // Redux support.  This gets set this apolloClient.middleware().
     this.store = null;
@@ -44,18 +29,23 @@ class ApolloPassport {
 
   }
 
+  /* modules */
+
+  use(strategyName, Strategy) {
+    this.strategies[strategyName] = new Strategy(this);
+  }
+
+  extendWith(obj) {
+    _.extend(this, obj);
+  }
+
   /* actions */
 
-  // TODO needs to move to 'local' package
-  async loginWithEmail(email, password) {
-    const result = await this.apolloClient.mutate({
-      mutation,
-      variables: {
-        email,
-        password: createHash('sha256').update(password).digest('hex')
-      }
-    });
+  loginStart() {
 
+  }
+
+  loginComplete(result, dataKey) {
     if (result.errors) {
       console.error("A server side error was thrown during the Apollo Passport GraphQL query:");
       console.error(result.errors);
@@ -63,20 +53,15 @@ class ApolloPassport {
       // should we still update state?
     }
 
-    const queryResult = result.data.passportLoginEmail;
+    const queryResult = result.data[dataKey];
     const data = queryResult.token ? jwtDecode(queryResult.token) : {};
 
-    // TODO needs a generalized method outside of local
     localStorage.setItem('apToken', queryResult.token);
     this.setState({
       data: data,
       verified: !!queryResult.token,
       error: queryResult.error || null
     });
-  }
-
-  signupWithEmail(email, password) {
-
   }
 
   logout() {

@@ -56,12 +56,11 @@
   "peerDependencies": {
     "graphql-tag": "^0.1.7",
     "winston": "^2.2.0",
-    "regenerator-runtime": "^0.9.5"
+    "regenerator-runtime": "^0.9.5",
+    "lodash": "^4.0.0"
   },
   "dependencies": {
-    "bcrypt": "^0.8.7",
     "jsonwebtoken": "^7.0.1",
-    "jwt-decode": "^2.1.0",
-    "sha.js": "^2.4.5"
+    "jwt-decode": "^2.1.0"
   }
 }
