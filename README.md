@@ -33,7 +33,12 @@ Lastly, this is my first time using passport, apollo/graphql and JWT, so PRs for
 ## Getting Started
 
 ```sh
-$ npm i --save apollo-passport passport passport-local # etc
+$ npm i --save passport passport-local # etc
+
+$ npm i --save apollo-passport \
+  apollo-passport-local \
+  apollo-passport-rethinkdbdash \
+  apollo-passport-react
 ```
 
 ### Quick Start
@@ -44,16 +49,17 @@ Inspired by Meteor's account system, apollo-passport (optionally) comes with eve
 
 ```js
 import ApolloPassport from 'apollo-passport';
+import RethinkDBDashDriver from 'apollo-passport-rethinkdbdash';
 import { Strategy as LocalStrategy } from 'passport-local';
 
 const apolloPassport = new ApolloPassport({
-  db: [ 'rethinkdbhash', r ],
-  jwtSecret: 'my special secret' // will be optional/automatic in the future
+  db: new RethinkDBDashDriver(r),  // "r" is your rethinkdbdash instance
+  jwtSecret: 'my special secret'   // will be optional/automatic in the future
 });
 
 // Pass the class, not the instance (i.e. no NEW), and no options for defaults
 // Make sure you setup strategies BEFORE calling getSchema, getResolvers below.
-apolloPassport.use('local', LocalStrategy);
+apolloPassport.use('local', LocalStrategy /*, options */);
 
 // Merge these into your Apollo config however you usually do...
 const apolloOptions = {

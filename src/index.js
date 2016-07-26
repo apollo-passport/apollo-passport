@@ -35,15 +35,22 @@ class ApolloPassport {
     this._schema = require('./schema').default;
     this.passport = passport;
 
-    this.dbName = options.db[0];
-    const userTableName = options.userTableName || 'users';
+    // const userTableName = options.userTableName || 'users';
 
-    const DBDriver = require(`./db/${this.dbName}`).default;
-    this.db = new DBDriver(options.db[1], userTableName);
+    this.assertIsDBDriver(options.db);
+    this.db = options.db;
 
     this.jwtSecret = jwtSecret;
     this.mapUserToJWTProps = options.mapUserToJWTProps || defaultMapUserToJWTProps;
     this.createTokenFromUser = options.createTokenFromUser || defaultCreateTokenFromUser;
+  }
+
+  assertIsDBDriver(db) {
+    if (!db)
+      throw new Error("Must provide a { db: DBDriverInstance } option");
+    if (!(db.createUser && db.fetchUserByEmail))
+      throw new Error("Option 'db' must be a valid DBDriver instance, e.g. "
+        + "new RethinkDBDriverDash(r)");
   }
 
   use(name, Strategy, options, verify) {
@@ -55,7 +62,7 @@ class ApolloPassport {
     if (!options)
       options = this.require(name, 'defaultOptions');
     if (!verify)
-      verify = this.dbRequire(name, 'verify');
+      verify = this.require(name, 'verify');
 
     const instance = new Strategy(options, verify.bind(this));
     passport.use(instance);
@@ -121,10 +128,6 @@ class ApolloPassport {
 
     const loaded = require(resolved);
     return loaded.__esModule ? loaded.default : loaded;
-  }
-
-  dbRequire(strategy, module) {
-    return this.require(strategy, `db/${this.dbName}/${module}`);
   }
 
   /* graphql, apollo */
