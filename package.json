@@ -12,10 +12,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gadicc/apollo-passport"
+    "url": "https://github.com/apollo-passport/apollo-passport"
   },
   "bugs": {
-    "url": "https://github.com/gadicc/apollo-passport/issues"
+    "url": "https://github.com/apollo-passport/apollo-passport/issues"
   },
   "keywords": [
     "apollo",
