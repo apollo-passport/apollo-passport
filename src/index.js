@@ -65,7 +65,7 @@ class ApolloPassport {
       verify = this.require(name, 'verify');
 
     const instance = new Strategy(options, verify.bind(this));
-    passport.use(instance);
+    this.passport.use(instance);
     //this._strategies.set(instance.name, instance);
 
     const apWrapper = this.require(name, 'index');
@@ -146,6 +146,12 @@ class ApolloPassport {
     }
   }
 
+  /*
+   * Wraps an apolloOptions object in a function that will check for a JWT
+   * in an Authorization header, and if it passes verification, add to decoded
+   * value to a 'jwt' in the context.  If an error occured, adds to jwtError,
+   * which is useful for debugging but can be safely ignored.
+   */
   wrapOptions(options) {
     var self = this;
 
@@ -159,19 +165,19 @@ class ApolloPassport {
       if (!token)
         return options;
 
-      console.log('token', token);
-
       let decoded;
       try {
         decoded = jwt.verify(token, self.jwtSecret);
-        console.log('decoded', decoded);
       } catch (err) {
         // This could be any number of reasons but in short: user not authed.
-        // Maybe pass the error to context so we can send back to client.
+        // JsonWebTokenError: invalid signature
         // JsonWebTokenError: invalid token
         // TokenExpiredError: jwt expired
-        console.log('err', err);
-        return options;
+        // Passed as context.jwtError for debugging but can be safely ignored.
+        return {
+          ...options,
+          context: { jwtError: err }
+        };
       }
 
       return {
@@ -181,6 +187,11 @@ class ApolloPassport {
     }
   }
 
+  /*
+   * Given a resolver object, it returns a new object, where every
+   * function that is a sub-key of the RootMutation key will be bound
+   * to the ApolloPassport instance (i.e. accessible via `this`).
+   */
   _bindRootMutations(obj) {
     const out = {};
     for (const key in obj)
@@ -196,4 +207,5 @@ class ApolloPassport {
 
 }
 
+export { defaultMapUserToJWTProps, defaultCreateTokenFromUser };
 export default ApolloPassport;
