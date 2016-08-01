@@ -112,7 +112,7 @@ $ npm i --save apollo-passport-react
 
 ```js
 import { LoginButtons } from 'apollo-passport-react';
-import 'apollo-passport-react/style/login_buttons.less';
+import 'apollo-passport-react/style/meteor.less';
 
 // From the file above...
 import { apolloPassport } from '../../../lib/apollo';

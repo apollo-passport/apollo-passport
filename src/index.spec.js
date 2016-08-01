@@ -199,15 +199,15 @@ describe('apollo-passport', () => {
     it('adds a jwtError to the context if one occurred', async () => {
       const token = jwt.sign({ userId: 1 }, 'a different secret');
       const result = await wrapper(reqAuthBearer(token));
-      should.not.exist(result.context.jwt);
-      result.context.jwtError.name.should.equal('JsonWebTokenError');
-      result.context.jwtError.message.should.equal('invalid signature');
+      should.not.exist(result.context.auth);
+      result.context.authError.name.should.equal('JsonWebTokenError');
+      result.context.authError.message.should.equal('invalid signature');
     });
 
     it('adds the decoded value of a valid token to the context', async () => {
       const token = jwt.sign({ userId: 1 }, jwtSecret);
       const result = await wrapper(reqAuthBearer(token));
-      result.context.jwt.userId.should.equal(1);
+      result.context.auth.userId.should.equal(1);
     });
   });
 

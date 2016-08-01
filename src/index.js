@@ -130,6 +130,20 @@ class ApolloPassport {
     return loaded.__esModule ? loaded.default : loaded;
   }
 
+  /* users */
+
+  // accept 'emails', 'services' fields
+  // return userId
+  async createUser(user) {
+    // pre hook
+
+    const userId = await this.db.createUser(user);
+
+    // post hook
+
+    return userId;
+  }
+
   /* graphql, apollo */
 
   schema() {
@@ -149,7 +163,7 @@ class ApolloPassport {
   /*
    * Wraps an apolloOptions object in a function that will check for a JWT
    * in an Authorization header, and if it passes verification, add to decoded
-   * value to a 'jwt' in the context.  If an error occured, adds to jwtError,
+   * value to a 'auth' in the context.  If an error occured, adds to authError,
    * which is useful for debugging but can be safely ignored.
    */
   wrapOptions(options) {
@@ -176,13 +190,13 @@ class ApolloPassport {
         // Passed as context.jwtError for debugging but can be safely ignored.
         return {
           ...options,
-          context: { jwtError: err }
+          context: { authError: err }
         };
       }
 
       return {
         ...options,
-        context: { jwt: decoded }
+        context: { auth: decoded }
       };
     }
   }
