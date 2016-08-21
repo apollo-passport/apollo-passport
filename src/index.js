@@ -33,6 +33,7 @@ class ApolloPassport {
     this._winston = options.winston || require('winston');
     this._resolvers = require('./resolvers').default;
     this._schema = require('./schema').default;
+    this._authenticators = {};
     this.passport = passport;
 
     // const userTableName = options.userTableName || 'users';
@@ -53,29 +54,39 @@ class ApolloPassport {
         + "new RethinkDBDriverDash(r)");
   }
 
-  use(name, Strategy, options, verify) {
+  use(nameArg, Strategy, options, verify) {
+    const parts = nameArg.split(':', 2);
+    const name = parts.pop(), namespace = parts.pop();
+
     if (!verify) {
       verify = options;
       options = null;
     }
 
     if (!options)
-      options = this.require(name, 'defaultOptions');
+      options = this.require(name, 'defaultOptions', namespace);
     if (!verify)
-      verify = this.require(name, 'verify');
+      verify = this.require(name, 'verify', namespace);
 
-    const instance = new Strategy(options, verify.bind(this));
+    const instance = new Strategy(options,
+      namespace ? verify.bind(this, name) : verify.bind(this));
     this.passport.use(instance);
     //this._strategies.set(instance.name, instance);
 
-    const apWrapper = this.require(name, 'index');
-    this.strategies[name] = new apWrapper(this);
+    // TODO, make local use this too
+    this._authenticators[name] = passport.authenticate(name);
 
-    const resolvers = this.require(name, 'resolvers');
-    this._resolvers = mergeResolvers(this._resolvers, resolvers);
+    const apWrapper = this.require(name, 'index', namespace, true /* optional */);
+    if (apWrapper)
+      this.strategies[name] = new apWrapper(this);
 
-    const schema = this.require(name, 'schema');
-    this._schema = [ mergeSchemas([this._schema[0], schema[0]]) ];
+    const resolvers = this.require(name, 'resolvers', namespace, true /* optional */);
+    if (resolvers)
+      this._resolvers = mergeResolvers(this._resolvers, resolvers);
+
+    const schema = this.require(name, 'schema', namespace, true /* optional */);
+    if (schema)
+      this._schema = [ mergeSchemas([this._schema[0], schema[0]]) ];
 
     // would also be nice to have a root query for available strategies
     // that could be used by the UI, and whether they are configured.
@@ -99,7 +110,7 @@ class ApolloPassport {
          * This is a small hack to make dev work easier.
          */
         if (module.charAt(0) !== '.') {
-          const relative = _path.join(__dirname, '..', '..', module);
+          const relative = _path.join(__dirname, '..', '..', module.replace(/apollo-passport-/, ''));
           try {
             return require.resolve(relative);
           } catch (err) {
@@ -115,16 +126,25 @@ class ApolloPassport {
     }
   }
 
-  require(strategy, module) {
+  require(strategy, module, namespace, optional) {
     // No static analysis, but that's ok for server side
     const fromPackage = `apollo-passport-${strategy}/lib/${module}`;
-    
+
     let resolved = this.resolve(fromPackage);
     if (!resolved)
       resolved = this.resolve(`./strategies/${strategy}/${module}`);
-    if (!resolved)
-      throw new Error(`Cannot find '${fromPackage}'.  `
-        + `Try 'npm i --save apollo-passport-${strategy}'.`);
+    if (!resolved && namespace)
+      resolved = this.resolve(`apollo-passport-${namespace}/lib/${module}`);
+    if (!resolved && namespace)
+      resolved = this.resolve(`./strategies/${namespace}/${module}`);
+
+    if (!resolved) {
+      if (optional)
+        return false;
+      else
+        throw new Error(`Cannot find '${fromPackage}'.  `
+          + `Try 'npm i --save apollo-passport-${strategy}'.`);
+    }
 
     const loaded = require(resolved);
     return loaded.__esModule ? loaded.default : loaded;
@@ -155,8 +175,63 @@ class ApolloPassport {
   }
 
   expressMiddleware(path = '/ap-auth') {
-    return function ApolloPassportExpressMiddleware(req, res, next) {
-      console.log('!!!', req.url);
+    var self = this;
+
+    if (this._authPath !== path)
+      this._authPath = path;
+
+    return function ApolloPassportExpressMiddleware(req, res /* , next */) {
+      const strategy = req.url.split('/')[1].split('?')[0];
+
+      // console.log('!!!', strategy, '!!!', req.url);
+
+      const authenticator = self._authenticators[strategy];
+
+      if (!authenticator) {
+        console.error('no authenticator for strategy: ' + strategy);
+        res.status(500, 'Internal server error');
+        res.end();
+        return;
+      }
+
+      let logInCalled = false;
+
+      const fakeReq = {
+        query: req.query,
+        logIn(user, options, callback) {
+          logInCalled = { user, options };
+          callback();
+        }
+      };
+
+      const fakeRes = {
+        headers: {},
+        setHeader(key, value) { this.headers[key] = value; console.log("setHeader", key, value); },
+        end(text) { console.log('end', text) },
+        redirect(where) { console.log('redirect', where); }
+      };
+
+      const fakeNext = function() {
+        console.log('fakeNext');
+        if (!logInCalled) {
+          return res.end('not ok');
+        }
+
+        // XXX can we get an error TO here?  and, errrors CURRENTLY NOT CAUGHT HERE
+        // should resemble an Apollo query result
+        const data = { data: { oauth2: { token: self.createTokenFromUser(logInCalled.user) } } };
+        const json = JSON.stringify(data);
+        res.setHeader('content-type', 'text/html');
+        res.end(`<html>
+          <head>
+            <script type='text/javascript'>
+              window.opener.apolloPassport.loginComplete(${json}, "oauth2");
+            </script>
+          </head>
+        </html>`);
+      };
+
+      authenticator(fakeReq, fakeRes, fakeNext);
     }
   }
 

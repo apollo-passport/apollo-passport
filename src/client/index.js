@@ -3,9 +3,17 @@ import _ from 'lodash';
 
 // TODO check and warn if regenerator-runtime not installed / present
 
+let instance;
+
 class ApolloPassport {
 
   constructor({ apolloClient }) {
+    if (instance)
+      throw new Error("An ApolloPassport instance already exists");
+
+    // Should we expose this via a getInstance static method?
+    instance = this;
+
     this.apolloClient = apolloClient;
 
     this._subscribers = new Set();
@@ -23,10 +31,29 @@ class ApolloPassport {
       // constructor is a synchronous method, queue this for after.
       setTimeout(() => { this.assertToken() }, 1);
     }
+
+    window.addEventListener("message", this.receiveMessage.bind(this), false);
   }
 
   assertToken() {
 
+  }
+
+  /* messages */
+
+  receiveMessage(event) {
+    if (event.origin !== window.location.origin ||
+        typeof event.data !== 'string' ||
+        event.data.substr(0, 15) !== 'apolloPassport ')
+      return;
+
+    const data = JSON.parse(event.data.substr(15));
+    if (data.type === 'loginComplete') {
+      this.loginComplete(data, data.key);
+    } else {
+      throw new Error("Unknown apolloPassport message: "
+        + event.data.substr(15));
+    }
   }
 
   /* modules */

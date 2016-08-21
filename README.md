@@ -69,7 +69,7 @@ const apolloOptions = {
 
 app.use('/graphql', apolloServer(apolloPassport.wrapOptions(apolloOptions)));
 
-app.use('/ap-auth', apolloPassport.expressMiddleware());
+app.use('/ap-auth', apolloPassport.expressMiddleware('/ap-auth'));
 ```
 
 **Client config**
