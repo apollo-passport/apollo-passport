@@ -26,20 +26,19 @@ profile: { id: '123456',
 export default function oauth2verify(strategy, accessToken, refreshToken, profile, cb) {
   // console.log('profile', profile);
 
-  /*
-  User.findOrCreate({ facebookId: profile.id }, function (err, user) {
-    return cb(err, user);
-  });
-  */
-
   const provider = profile.provider;
   if (strategy !== provider)
-    console.warn(`[harmless warn for dev] oauth2verify, "${strategy}" !== "${provider}"`);
+    console.warn('[harmless warn for dev] oauth2verify, '
+      + `strategy "${strategy}" !== provider "${provider}"`);
+
+  // This is not really a "verification" but we want to store it in the database
+  profile.accessToken = accessToken;
+  if (refreshToken) profile.refreshToken = refreshToken;
 
   // support multiple email addresses?  needs DB support.  do any providers do this?
   const email = profile.emails && profile.emails[0] && profile.emails[0].value;
 
-  // TODO double check if email is null that...
+  // TODO double check if DB driver if email is null that all works as expected
   this.db.fetchUserByServiceIdOrEmail(provider, profile.id, email).then(user => {
 
     if (!user) {
@@ -50,7 +49,7 @@ export default function oauth2verify(strategy, accessToken, refreshToken, profil
       return this.createUser(user).then(userId => {
         user.id = userId;
         return cb(null, user);
-      });
+      }).catch(cb);
     }
 
     // if we're out of date, update in the background (i.e. no await)
@@ -69,5 +68,5 @@ export default function oauth2verify(strategy, accessToken, refreshToken, profil
     }
 
     cb(null, user);
-  });
+  }).catch(cb);
 }

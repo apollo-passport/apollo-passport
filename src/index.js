@@ -74,7 +74,7 @@ class ApolloPassport {
     //this._strategies.set(instance.name, instance);
 
     // TODO, make local use this too
-    this._authenticators[name] = passport.authenticate(name);
+    this._authenticators[name] = passport.authenticate(name, { failureRedirect: '/login' });
 
     const apWrapper = this.require(name, 'index', namespace, true /* optional */);
     if (apWrapper)
@@ -181,7 +181,10 @@ class ApolloPassport {
       this._authPath = path;
 
     return function ApolloPassportExpressMiddleware(req, res /* , next */) {
-      const strategy = req.url.split('/')[1].split('?')[0];
+      const optParts = req.url.split('?');
+      const pathParts = optParts[0].split('/');
+      const strategy = pathParts[1];
+      const action = pathParts[2];
 
       // console.log('!!!', strategy, '!!!', req.url);
 
@@ -196,9 +199,11 @@ class ApolloPassport {
 
       let logInCalled = false;
 
+      console.log(req.query);
       const fakeReq = {
         query: req.query,
         logIn(user, options, callback) {
+          console.log('login called');
           logInCalled = { user, options };
           callback();
         }
@@ -212,26 +217,46 @@ class ApolloPassport {
       };
 
       const fakeNext = function() {
-        console.log('fakeNext');
-        if (!logInCalled) {
-          return res.end('not ok');
-        }
+        // Must get Apollo style errors/data property.
+        const data = {
+          type: 'loginComplete',
+          key: 'oauth2'
+        };
 
         // XXX can we get an error TO here?  and, errrors CURRENTLY NOT CAUGHT HERE
-        // should resemble an Apollo query result
-        const data = { data: { oauth2: { token: self.createTokenFromUser(logInCalled.user) } } };
+        if (0 /* server side error */) {
+          data.errors = []; // apollo style error TODO
+        } else {
+          if (logInCalled)
+            data.data = { oauth2: {
+              token: self.createTokenFromUser(logInCalled.user),
+              error: ""
+            } };
+          else
+            data.data = { oauth2: {
+              token: "",
+              error: "Authentication Failed"
+            } };
+        }
+
         const json = JSON.stringify(data);
         res.setHeader('content-type', 'text/html');
-        res.end(`<html>
-          <head>
-            <script type='text/javascript'>
-              window.opener.apolloPassport.loginComplete(${json}, "oauth2");
-            </script>
-          </head>
-        </html>`);
+        res.end('<html>' +
+          '<head>' +
+            '<script type="text/javascript">' +
+              `window.opener.postMessage('apolloPassport ${json}', window.location.origin);` +
+              'window.close();' +
+            '</script>' +
+          '</head>' +
+        '</html>');
       };
 
-      authenticator(fakeReq, fakeRes, fakeNext);
+      try {
+        const result = authenticator(fakeReq, fakeRes, fakeNext);
+        console.log('result', result);
+      } catch (err) {
+        console.log(5, err);
+      }
     }
   }
 
