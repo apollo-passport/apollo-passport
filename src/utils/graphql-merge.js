@@ -2,6 +2,10 @@ export function mergeResolvers(a, b) {
   return {
     ...a,
     ...b,
+    RootQuery: {
+      ...a.RootQuery,
+      ...b.RootQuery
+    },
     RootMutation: {
       ...a.RootMutation,
       ...b.RootMutation
@@ -37,15 +41,15 @@ export function mergeSchemas(_schemas) {
 
   const finalSchema = `
 ${outSchemas.join('')}
-type RootQueries {
+type RootQuery {
 ${rootQueries.join('')}
 }
-type RootMutations {
+type RootMutation {
 ${rootMutations.join('')}
 }
 schema {
-  query: RootQueries,
-  mutation: RootMutations
+  query: RootQuery,
+  mutation: RootMutation
 }
   `;
 

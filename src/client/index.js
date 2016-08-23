@@ -1,7 +1,27 @@
+import gql from 'graphql-tag';
 import jwtDecode from 'jwt-decode';
 import _ from 'lodash';
 
+import openCenteredPopup from './popup';
+
 // TODO check and warn if regenerator-runtime not installed / present
+
+const discoveryQuery = gql`
+{
+  apDiscovery {
+    ROOT_URL,
+    authPath,
+    services {
+      name
+      label
+      type
+      clientId
+      scope
+      urlStart
+    }
+  }
+}
+`;
 
 let instance;
 
@@ -33,6 +53,34 @@ class ApolloPassport {
     }
 
     window.addEventListener("message", this.receiveMessage.bind(this), false);
+
+    this.state = 'xxxSTATExxx';
+
+    const self = this;
+    apolloClient.query({ query: discoveryQuery }).then(({ errors, data }) => {
+      if (errors) {
+        console.error(errors);
+        throw new Error("Errors received from discovery query");
+      }
+
+      self.discovered = data.apDiscovery;
+      console.log(self.discovered);
+
+      self.discovered.services.forEach(service => {
+        if (service.type === 'oauth' || service.type === 'oauth2') {
+          const url = service.urlStart +
+            "?client_id=" + service.clientId +
+            "&redirect_uri=" + self.discovered.ROOT_URL + self.discovered.authPath + service.name +
+            "&scope=" + service.scope +
+            "&state=" + self.state;
+
+          console.log(url);
+
+          // default width, height from meteor's oauth/oauth_browser.js
+          service.open = openCenteredPopup.bind(null, url, 331);
+        }
+      });
+    });
   }
 
   assertToken() {
@@ -66,7 +114,9 @@ class ApolloPassport {
     _.extend(this, obj);
   }
 
-  /* actions */
+  ////////////////////
+  // Login / Logout //
+  ////////////////////
 
   loginStart() {
 
@@ -96,7 +146,9 @@ class ApolloPassport {
     this.setState({ data: {}, verified: false, error: null });
   }
 
-  /* state */
+  ///////////
+  // State //
+  ///////////
 
   stateHash(state) {
     return JSON.stringify(state || this._state);
@@ -133,6 +185,15 @@ class ApolloPassport {
     return this._state;
   }
 
+  emitState() {
+    const state = this.getState();
+    this._subscribers.forEach(callback => callback(state));
+  }
+
+  ////////////////////////
+  // Events (for state) //
+  ////////////////////////
+
   subscribe(callback) {
     this._subscribers.add(callback);
   }
@@ -141,12 +202,18 @@ class ApolloPassport {
     this._subscribers.delete(callback);
   }
 
-  emitState() {
-    const state = this.getState();
-    this._subscribers.forEach(callback => callback(state));
+  ////////////////////////////
+  // Service login / popups //
+  ////////////////////////////
+
+  createServicePopup(service) {
+    const url = 'xxx';
+    return openCenteredPopup.bind(null, url, 651, 331);
   }
 
-  /* optional redux support */
+  ////////////////////////////
+  // Optional Redux support //
+  ////////////////////////////
 
   reducer() {
     var self = this;

@@ -71,10 +71,12 @@ class ApolloPassport {
     const instance = new Strategy(options,
       namespace ? verify.bind(this, name) : verify.bind(this));
     this.passport.use(instance);
-    //this._strategies.set(instance.name, instance);
+
+    // this._strategies.set(instance.name, instance);
+    this.strategies[name] = instance;
 
     // TODO, make local use this too
-    this._authenticators[name] = passport.authenticate(name, { failureRedirect: '/login' });
+    this._authenticators[name] = passport.authenticate(name);
 
     const apWrapper = this.require(name, 'index', namespace, true /* optional */);
     if (apWrapper)
@@ -122,7 +124,7 @@ class ApolloPassport {
 
         return null;
       }
-      throw new err;
+      throw err;
     }
   }
 
@@ -171,7 +173,7 @@ class ApolloPassport {
   }
 
   resolvers() {
-    return this._bindRootMutations(this._resolvers);
+    return this._bindRootQueriesAndMutations(this._resolvers);
   }
 
   expressMiddleware(path = '/ap-auth') {
@@ -251,12 +253,7 @@ class ApolloPassport {
         '</html>');
       };
 
-      try {
-        const result = authenticator(fakeReq, fakeRes, fakeNext);
-        console.log('result', result);
-      } catch (err) {
-        console.log(5, err);
-      }
+      authenticator(fakeReq, fakeRes, fakeNext);
     }
   }
 
@@ -306,13 +303,13 @@ class ApolloPassport {
    * function that is a sub-key of the RootMutation key will be bound
    * to the ApolloPassport instance (i.e. accessible via `this`).
    */
-  _bindRootMutations(obj) {
+  _bindRootQueriesAndMutations(obj) {
     const out = {};
     for (const key in obj)
-      if (key === 'RootMutation') {
-        out.RootMutation = {};
-        for (const key2 in obj.RootMutation)
-          out.RootMutation[key2] = obj.RootMutation[key2].bind(this);
+      if (key === 'RootMutation' || key === 'RootQuery') {
+        out[key] = {};
+        for (const key2 in obj[key])
+          out[key][key2] = obj[key][key2].bind(this);
       } else {
         out[key] = obj[key];
       }

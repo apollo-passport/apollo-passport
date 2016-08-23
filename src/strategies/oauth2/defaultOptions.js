@@ -5,5 +5,9 @@ export default {
   clientSecret: 'fd3ec904596e0b775927a1052a3f7165',
   callbackURL: "http://localhost:3200/ap-auth/facebook",
   // https://developers.facebook.com/docs/graph-api/reference/v2.5/user
-  profileFields: ['id', 'displayName', 'email']
+  profileFields: [
+    'id', 'email', 'pussy',
+    'first_name', 'middle_name', 'last_name',
+    'gender', 'locale'
+  ]
 }
