@@ -59,11 +59,9 @@ export default function oauth2verify(strategy, accessToken, refreshToken, profil
       this.db.assertUserServiceData(user.id, provider, profile);
       user.services[provider] = profile;
     }
-    if (email && (!user.emails || !_.find(user.emails, { address: email }))) {
+    if (!user.emails) user.emails = [];
+    if (email && (!_.find(user.emails, { address: email }))) {
       this.db.assertUserEmailData(user.id, email);
-
-      if (!user.emails)
-        user.emails = [];
       user.emails.push({ address: email });
     }
 

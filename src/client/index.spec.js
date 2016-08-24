@@ -16,6 +16,7 @@ const localStorage = window.localStorage = {
   setItem: (name, value) => localStorage.items[name] = value,
   removeItem: (name) => delete localStorage.items[name]
 };
+global.window.addEventListener = function() {};
 
 const should = chai.should();
 
