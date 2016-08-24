@@ -13,7 +13,7 @@ const resolvers = {
             label: service.name.charAt(0).toUpperCase() + service.name.substr(1),
             type: 'oauth',
             clientId: service._oauth2._clientId,
-            scope: service._scope | "",
+            scope: (service._scope && service._scope.join(',')) || "",
             urlStart: service._oauth2._authorizeUrl
           })
         }

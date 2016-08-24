@@ -77,7 +77,7 @@ class ApolloPassport {
           console.log(url);
 
           // default width, height from meteor's oauth/oauth_browser.js
-          service.open = openCenteredPopup.bind(null, url, 331);
+          service.open = openCenteredPopup.bind(null, url, 651, 331);
         }
       });
     });

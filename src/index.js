@@ -99,6 +99,10 @@ class ApolloPassport {
     // TODO, make local use this too
     this._authenticators[name] = passport.authenticate(name);
 
+    // Not used yet except for options (TODO serve on auth URL)
+    if (options.scope)
+      passport.authenticate(name, { options: options.scope });
+
     const apWrapper = this.require(name, 'index', namespace, true /* optional */);
     if (apWrapper)
       this.strategies[name] = new apWrapper(this);
