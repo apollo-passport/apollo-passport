@@ -36,7 +36,18 @@ class ApolloPassport {
     this._authenticators = {};
     this.passport = passport;
 
-    // const userTableName = options.userTableName || 'users';
+    this.ROOT_URL = options.ROOT_URL || process.env.ROOT_URL
+      || (typeof ROOT_URL === 'string' && ROOT_URL);
+    if (!this.ROOT_URL)
+      throw new Error("No ROOT_URL set.  Please see Apollo Passport README");
+    if (!this.ROOT_URL.endsWith('/'))
+      this.ROOT_URL += '/';
+
+    this.authPath = options.authPath || 'ap-auth';
+    if (this.authPath.startsWith('/'))
+      this.authPath = this.authPath.substr(1);
+
+    this.authUrlRoot = this.ROOT_URL + this.authPath;
 
     this.assertIsDBDriver(options.db);
     this.db = options.db;
@@ -58,7 +69,7 @@ class ApolloPassport {
     const parts = nameArg.split(':', 2);
     const name = parts.pop(), namespace = parts.pop();
 
-    if (!verify) {
+    if (!verify && typeof options === 'function') {
       verify = options;
       options = null;
     }
@@ -67,6 +78,16 @@ class ApolloPassport {
       options = this.require(name, 'defaultOptions', namespace);
     if (!verify)
       verify = this.require(name, 'verify', namespace);
+
+    if (namespace === 'oauth' || namespace === 'oauth2') {
+      if (!options.callbackURL)
+        options.callbackURL = this.authUrlRoot + '/' + name;
+      if (!options.profileFields)
+        options.profileFields = // Passport converts these per strategy
+          [ 'id', 'username', 'displayName', 'gender', 'emails', 'photos' ];
+    }
+
+    console.log(options);
 
     const instance = new Strategy(options,
       namespace ? verify.bind(this, name) : verify.bind(this));
@@ -176,11 +197,8 @@ class ApolloPassport {
     return this._bindRootQueriesAndMutations(this._resolvers);
   }
 
-  expressMiddleware(path = '/ap-auth') {
+  expressMiddleware() {
     var self = this;
-
-    if (this._authPath !== path)
-      this._authPath = path;
 
     return function ApolloPassportExpressMiddleware(req, res /* , next */) {
       const optParts = req.url.split('?');
