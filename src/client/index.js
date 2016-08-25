@@ -23,16 +23,18 @@ const discoveryQuery = gql`
 }
 `;
 
-let instance;
+// let instance;
 
 class ApolloPassport {
 
   constructor({ apolloClient }) {
+    /*
     if (instance)
       throw new Error("An ApolloPassport instance already exists");
 
     // Should we expose this via a getInstance static method?
     instance = this;
+    */
 
     this.apolloClient = apolloClient;
 
@@ -55,16 +57,22 @@ class ApolloPassport {
     window.addEventListener("message", this.receiveMessage.bind(this), false);
 
     this.state = 'xxxSTATExxx';
+    this._runDiscovery();
+  }
 
+  assertToken() {
+
+  }
+
+  _runDiscovery() {
     const self = this;
-    apolloClient.query({ query: discoveryQuery }).then(({ errors, data }) => {
+    self.apolloClient.query({ query: discoveryQuery }).then(({ errors, data }) => {
       if (errors) {
         console.error(errors);
         throw new Error("Errors received from discovery query");
       }
 
       self.discovered = data.apDiscovery;
-      console.log(self.discovered);
 
       self.discovered.services.forEach(service => {
         if (service.type === 'oauth' || service.type === 'oauth2') {
@@ -83,11 +91,9 @@ class ApolloPassport {
     });
   }
 
-  assertToken() {
-
-  }
-
-  /* messages */
+  ///////////////
+  // Messaging //
+  ///////////////
 
   receiveMessage(event) {
     if (event.origin !== window.location.origin ||
@@ -104,7 +110,9 @@ class ApolloPassport {
     }
   }
 
-  /* modules */
+  /////////////
+  // Modules //
+  /////////////
 
   use(strategyName, Strategy) {
     this.strategies[strategyName] = new Strategy(this);
@@ -200,15 +208,6 @@ class ApolloPassport {
 
   unsubscribe(callback) {
     this._subscribers.delete(callback);
-  }
-
-  ////////////////////////////
-  // Service login / popups //
-  ////////////////////////////
-
-  createServicePopup(service) {
-    const url = 'xxx';
-    return openCenteredPopup.bind(null, url, 651, 331);
   }
 
   ////////////////////////////

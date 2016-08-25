@@ -1,6 +1,11 @@
 import ApolloPassport from './index';
 import chai from 'chai';
+import sinon from 'sinon';
+import sinonChai from 'sinon-chai';
 import 'regenerator-runtime/runtime';
+
+const should = chai.should();
+chai.use(sinonChai);
 
 const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ';
 const decodedToken = {
@@ -16,24 +21,48 @@ const localStorage = window.localStorage = {
   setItem: (name, value) => localStorage.items[name] = value,
   removeItem: (name) => delete localStorage.items[name]
 };
-global.window.addEventListener = function() {};
 
-const should = chai.should();
+window.addEventListener = function() {};
+
+window.location = {
+  // sinon relies on location.protocol if window is defined
+  // in /sinon/lib/sinon/util/fake_server.js
+  protocol: 'http',
+  // For messaging checks
+  origin: 'origin'
+};
+
+// Synchronous promise stub
+function FakeResolve(value) {
+  return () => ({
+    then(then) {
+      then(value);
+      return {
+        // catch(err) { throw err; }
+      }
+    }
+  });
+}
+
+// Miminal options necessary for constructor to init, skipping non-specific tests
+const minOpts = {
+  apolloClient: {
+    query: () => ({ then() {} })   // i.e. skip / no-op
+  }
+};
 
 describe('ApolloPassport - client', () => {
 
   describe('- constructor', () => {
 
     it('instantiates correctly', () => {
-      const apolloClient = {};
-      const ap = new ApolloPassport({ apolloClient });
-
-      ap.apolloClient.should.equal(apolloClient);
+      const ap = new ApolloPassport(minOpts);
+      ap.apolloClient.should.equal(minOpts.apolloClient);
     });
 
     it('runs assertToken if a token exists in localStorage', (done) => {
       localStorage.setItem('apToken', token);
-      const ap = new ApolloPassport({});
+      const ap = new ApolloPassport(minOpts);
       ap.assertToken = function() {
         ap._token.should.equal(token);
         done();
@@ -42,17 +71,98 @@ describe('ApolloPassport - client', () => {
 
   });
 
+  describe('- internal', () => {
+
+    describe('_runDiscovery', () => {
+
+      it('throws on errors', () => {
+        const apolloClient = {
+          query: FakeResolve({
+            errors: []
+          })
+        };
+        (function () {
+          new ApolloPassport({ apolloClient });
+        }).should.throw();
+      });
+
+      it('sets .discovered, builds .open', () => {
+        const discoveryData = {
+          ROOT_URL: 'ROOT_URL',
+          authPath: 'ap-auth',
+          services: [
+            {
+              type: 'oauth',
+              name: 'footbook',
+              urlStart: 'http://my.service/oauth/auth'
+            },
+            {
+              type: 'oauth2',
+              name: 'meower',
+              urlStart: 'http://my.service/oauth/auth'
+            }
+          ]
+        };
+        const apolloClient = {
+          query: FakeResolve({ data: { apDiscovery: discoveryData } })
+        };
+        const ap = new ApolloPassport({ apolloClient });
+
+        ap.discovered.should.equal(discoveryData);
+
+        ap.discovered.services[0].open.should.exist;
+        ap.discovered.services[1].open.should.exist;
+      });
+
+    });
+
+  });
+
+  describe('- messaging', () => {
+
+    describe('receiveMessage()', () => {
+      const ap = new ApolloPassport(minOpts);
+
+      it('skips irrelevent messages', () => {
+        ap.loginComplete = sinon.spy();
+
+        ap.receiveMessage({ origin: 'not-origin', data: "apolloPassport {}" });
+        ap.loginComplete.should.not.have.been.called;
+
+        ap.receiveMessage({ origin: window.location.origin, data: {} });
+        ap.loginComplete.should.not.have.been.called;
+      });
+
+      it('calls loginComplete', () => {
+        ap.loginComplete = sinon.spy();
+        const data = { type: 'loginComplete', key: 'key' };
+        const dataStr = 'apolloPassport ' + JSON.stringify(data);
+        ap.receiveMessage({ origin: window.location.origin, data: dataStr });
+        ap.loginComplete.should.have.been.calledWith(data, data.key);
+      });
+
+      it('throws on invalid key', () => {
+        const data = { type: 'unknown' };
+        const dataStr = 'apolloPassport ' + JSON.stringify(data);
+        (function () {
+          ap.receiveMessage({ origin: window.location.origin, data: dataStr });
+        }).should.throw();
+      });
+    });
+
+  });
+
   describe('- modules', () => {
 
     it('can be used', () => {
-      const ap = new ApolloPassport({});
+      const ap = new ApolloPassport(minOpts);
       const TestStrategy = function() {};
       ap.use('test', TestStrategy);
       ap.strategies.test.should.be.an.instanceof(TestStrategy);
     });
 
     it('can extend the instance', () => {
-      const ap = new ApolloPassport({});
+      const ap = new ApolloPassport(minOpts);
       const methods = { a: {} };
       ap.extendWith(methods);
       ap.a.should.equal(methods.a);
@@ -69,7 +179,7 @@ describe('ApolloPassport - client', () => {
     describe('loginComplete()', () => {
 
       it('handles errors', () => {
-        const ap = new ApolloPassport({});
+        const ap = new ApolloPassport(minOpts);
         const result = {
           errors: []
         };
@@ -78,8 +188,8 @@ describe('ApolloPassport - client', () => {
         // Nothing to test for for now.
       });
 
-      it('sets state', () => {
-        const ap = new ApolloPassport({});
+      it('sets state on success', () => {
+        const ap = new ApolloPassport(minOpts);
         const result = {
           data: {
             passportLoginEmail: { token }
@@ -94,11 +204,26 @@ describe('ApolloPassport - client', () => {
         });
       });
 
+      it('sets state on error', () => {
+        const ap = new ApolloPassport(minOpts);
+        const result = {
+          data: {
+            passportLoginEmail: { error: "something" }
+          }
+        };
+
+        ap.loginComplete(result, 'passportLoginEmail');
+        ap.getState().should.deep.equal({
+          data: {},
+          verified: false,
+          error: "something"
+        });
+      });
 
     });
 
     it('logout() clears state & local storage', () => {
-      const ap = new ApolloPassport({});
+      const ap = new ApolloPassport(minOpts);
 
       localStorage.setItem('apToken', 'a');
       ap.setState({ data: decodedToken, verified: true, error: null });
@@ -115,7 +240,7 @@ describe('ApolloPassport - client', () => {
   describe('- state', () => {
 
     it('allows removal subscribers', () => {
-      const ap = new ApolloPassport({});
+      const ap = new ApolloPassport(minOpts);
       const test = function() {};
 
       ap.subscribe(test);
@@ -130,7 +255,7 @@ describe('ApolloPassport - client', () => {
 
     describe('- reducer', () => {
 
-      const ap = new ApolloPassport({});
+      const ap = new ApolloPassport(minOpts);
       const reducer = ap.reducer();
       const state = {};
 
@@ -155,7 +280,7 @@ describe('ApolloPassport - client', () => {
 
       it('keeps ref to store and returns identity middleware', () => {
 
-        const ap = new ApolloPassport({});
+        const ap = new ApolloPassport(minOpts);
         const middleware = ap.middleware();
         const store = {};
         const m = middleware(store);
@@ -169,7 +294,7 @@ describe('ApolloPassport - client', () => {
 
       it('updates redux state on apolloPassport state changes', (done) => {
 
-        const ap = new ApolloPassport({});
+        const ap = new ApolloPassport(minOpts);
         const middleware = ap.middleware();
         const nextState = { data: {}, verified: true, error: null };
         const store = {

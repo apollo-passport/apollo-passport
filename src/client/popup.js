@@ -1,4 +1,5 @@
 // From meteor/packages/oauth/oauth_browser.js
+/* istanbul ignore next */
 export default function openCenteredPopup(url, width, height) {
   var screenX = typeof window.screenX !== 'undefined'
         ? window.screenX : window.screenLeft;

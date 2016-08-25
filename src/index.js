@@ -34,7 +34,7 @@ class ApolloPassport {
     this._resolvers = require('./resolvers').default;
     this._schema = require('./schema').default;
     this._authenticators = {};
-    this.passport = passport;
+    this.passport = options.passport || passport;
 
     this.ROOT_URL = options.ROOT_URL || process.env.ROOT_URL
       || (typeof ROOT_URL === 'string' && ROOT_URL);
@@ -82,12 +82,12 @@ class ApolloPassport {
     if (namespace === 'oauth' || namespace === 'oauth2') {
       if (!options.callbackURL)
         options.callbackURL = this.authUrlRoot + '/' + name;
-      if (!options.profileFields)
-        options.profileFields = // Passport converts these per strategy
-          [ 'id', 'username', 'displayName', 'gender', 'emails', 'photos' ];
+      // if (!options.profileFields)
+      //  options.profileFields = // Passport converts these per strategy
+      //    [ 'id', 'username', 'displayName', 'gender', 'emails', 'photos' ];
     }
 
-    console.log(options);
+    // console.log(options);
 
     const instance = new Strategy(options,
       namespace ? verify.bind(this, name) : verify.bind(this));
@@ -101,7 +101,7 @@ class ApolloPassport {
 
     // Not used yet except for options (TODO serve on auth URL)
     if (options.scope)
-      passport.authenticate(name, { options: options.scope });
+      this.passport.authenticate(name, { scope: options.scope });
 
     const apWrapper = this.require(name, 'index', namespace, true /* optional */);
     if (apWrapper)
