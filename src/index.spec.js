@@ -7,6 +7,8 @@ import jwt from 'jsonwebtoken';
 import ApolloPassport from './index';
 import { defaultMapUserToJWTProps, defaultCreateTokenFromUser } from './index';
 
+import { FakeResolve, FakeReject } from './test-utils/promises';
+
 const should = chai.should();
 chai.use(sinonChai);
 
@@ -139,6 +141,9 @@ describe('apollo-passport', () => {
           return function() { return { _defaultVerify: true, self: this }; };
         case 'defaultOptions':
           return { _defaultOptions: true };
+
+        /* just to help with writing tests */
+        /* istanbul ignore next */
         default:
           throw new Error("No " + module);
       }
@@ -199,8 +204,15 @@ describe('apollo-passport', () => {
     });
   });
 
-  describe('resolve()', () => {
+  /////////////////////////////
+  // require() and resolve() //
+  /////////////////////////////
 
+  describe('resolve()', () => {
+    const ap = new ApolloPassport(requiredOptions());
+    (function () {
+      ap.resolve({});  // expects a string
+    }).should.throw();
   });
 
   describe('require()', () => {
@@ -231,6 +243,34 @@ describe('apollo-passport', () => {
 
   });
 
+  ///////////
+  // Users //
+  ///////////
+
+  describe('users', () => {
+
+    describe('createUser', () => {
+
+      it('calls db.createUser and returns the userId', async () => {
+        const desiredUserId = '1';
+
+        const options = requiredOptions();
+        options.db.createUser = () => Promise.resolve(desiredUserId);
+
+        const ap = new ApolloPassport(options);
+        const userId = await ap.createUser({});
+
+        userId.should.equal(desiredUserId);
+      });
+
+    });
+
+  });
+
+  //////////////////////
+  // GraphQL & Apollo //
+  //////////////////////
+
   describe('schema()', () => {
     it('returns this._schema', () => {
       const ap = new ApolloPassport(requiredOptions());
@@ -245,10 +285,6 @@ describe('apollo-passport', () => {
       ap._bindRootQueriesAndMutations = function(x) { return { ...x, _bound: 1 }; };
       ap.resolvers().should.deep.equal({ ...ap._resolvers, _bound: 1 });
     });
-  });
-
-  describe('expressMiddleware()', () => {
-
   });
 
   describe('wrapOptions() func', () => {
@@ -305,6 +341,54 @@ describe('apollo-passport', () => {
       bound.RootMutation.x().should.equal(ap);
       bound.RootQuery.x().should.equal(ap);
     });
+  });
+
+  /////////////////
+  // Middlewares //
+  /////////////////
+
+  describe('middleware', () => {
+
+    // honestly we should just skip this, or at least validate html
+    it('popupScript', () => {
+      const data = { a: 1 };
+      const ap = new ApolloPassport(requiredOptions());
+      const out = ap.popupScript(data);
+      const matches = out.match(/postMessage\('apolloPassport (.*)', window.location/);
+      JSON.parse(matches[1]).should.deep.equal(data);
+    });
+
+    describe('expressMiddleware()', () => {
+
+      it('passes content', () => {
+        const ap = new ApolloPassport(requiredOptions());
+        ap.apAuthenticate = FakeResolve('data');
+        ap.popupScript = () => 'popupScript';
+
+        const middleware = ap.expressMiddleware();
+        const req = { url: '/ap-auth/facebook/callback' };
+        const res = { setHeader() {}, end: sinon.spy() };
+
+        middleware(req, res);
+        res.end.should.have.been.calledWith('popupScript', 'utf8');
+      });
+
+      it('handles errors', () => {
+        const ap = new ApolloPassport(requiredOptions());
+        ap.apAuthenticate = FakeReject(new Error('error'));
+        ap.popupScript = () => 'popupScript';
+
+        const middleware = ap.expressMiddleware();
+        const req = { url: '/ap-auth/facebook/callback' };
+        const res = { status: sinon.spy(), end: sinon.spy() };
+
+        middleware(req, res);
+        res.status.should.have.been.calledWith(500, 'Internal server error');
+        res.end.should.have.been.called;
+      });
+
+    });
+
   });
 
 });

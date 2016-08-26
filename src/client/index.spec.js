@@ -4,6 +4,8 @@ import sinon from 'sinon';
 import sinonChai from 'sinon-chai';
 import 'regenerator-runtime/runtime';
 
+import { FakeResolve } from '../test-utils/promises';
+
 const should = chai.should();
 chai.use(sinonChai);
 
@@ -31,18 +33,6 @@ window.location = {
   // For messaging checks
   origin: 'origin'
 };
-
-// Synchronous promise stub
-function FakeResolve(value) {
-  return () => ({
-    then(then) {
-      then(value);
-      return {
-        // catch(err) { throw err; }
-      }
-    }
-  });
-}
 
 // Miminal options necessary for constructor to init, skipping non-specific tests
 const minOpts = {

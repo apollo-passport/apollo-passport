@@ -1,8 +1,11 @@
 import path from 'path';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
-import { mergeResolvers, mergeSchemas } from './utils/graphql-merge';
 import _ from 'lodash';
+
+import apAuthenticate from './authenticate';
+import { mergeResolvers, mergeSchemas } from './utils/graphql-merge';
+
 
 // Some super weird babel thing going on here, where path is not defined.
 const _path = path;
@@ -35,6 +38,8 @@ class ApolloPassport {
     this._schema = require('./schema').default;
     this._authenticators = {};
     this.passport = options.passport || passport;
+
+    this.apAuthenticate = apAuthenticate;
 
     this.ROOT_URL = options.ROOT_URL || process.env.ROOT_URL
       || (typeof ROOT_URL === 'string' && ROOT_URL);
@@ -123,7 +128,9 @@ class ApolloPassport {
     _.extend(this, obj);
   }
 
-  /* resolve, require */
+  /////////////////////////////
+  // require() and resolve() //
+  /////////////////////////////
 
   resolve(module) {
     try {
@@ -142,6 +149,7 @@ class ApolloPassport {
             return require.resolve(relative);
           } catch (err) {
             if (err.message !== `Cannot find module '${relative}'`)
+              /* istanbul ignore next */
               throw err;
             return null;
           }
@@ -177,7 +185,9 @@ class ApolloPassport {
     return loaded.__esModule ? loaded.default : loaded;
   }
 
-  /* users */
+  ///////////
+  // Users //
+  ///////////
 
   // accept 'emails', 'services' fields
   // return userId
@@ -191,7 +201,9 @@ class ApolloPassport {
     return userId;
   }
 
-  /* graphql, apollo */
+  //////////////////////
+  // GraphQL & Apollo //
+  //////////////////////
 
   schema() {
     return this._schema;
@@ -199,84 +211,6 @@ class ApolloPassport {
 
   resolvers() {
     return this._bindRootQueriesAndMutations(this._resolvers);
-  }
-
-  expressMiddleware() {
-    var self = this;
-
-    return function ApolloPassportExpressMiddleware(req, res /* , next */) {
-      const optParts = req.url.split('?');
-      const pathParts = optParts[0].split('/');
-      const strategy = pathParts[1];
-      const action = pathParts[2];
-
-      // console.log('!!!', strategy, '!!!', req.url);
-
-      const authenticator = self._authenticators[strategy];
-
-      if (!authenticator) {
-        console.error('no authenticator for strategy: ' + strategy);
-        res.status(500, 'Internal server error');
-        res.end();
-        return;
-      }
-
-      let logInCalled = false;
-
-      console.log(req.query);
-      const fakeReq = {
-        query: req.query,
-        logIn(user, options, callback) {
-          console.log('login called');
-          logInCalled = { user, options };
-          callback();
-        }
-      };
-
-      const fakeRes = {
-        headers: {},
-        setHeader(key, value) { this.headers[key] = value; console.log("setHeader", key, value); },
-        end(text) { console.log('end', text) },
-        redirect(where) { console.log('redirect', where); }
-      };
-
-      const fakeNext = function() {
-        // Must get Apollo style errors/data property.
-        const data = {
-          type: 'loginComplete',
-          key: 'oauth2'
-        };
-
-        // XXX can we get an error TO here?  and, errrors CURRENTLY NOT CAUGHT HERE
-        if (0 /* server side error */) {
-          data.errors = []; // apollo style error TODO
-        } else {
-          if (logInCalled)
-            data.data = { oauth2: {
-              token: self.createTokenFromUser(logInCalled.user),
-              error: ""
-            } };
-          else
-            data.data = { oauth2: {
-              token: "",
-              error: "Authentication Failed"
-            } };
-        }
-
-        const json = JSON.stringify(data);
-        res.setHeader('content-type', 'text/html');
-        res.end('<html>' +
-          '<head>' +
-            '<script type="text/javascript">' +
-              `window.opener.postMessage('apolloPassport ${json}', window.location.origin);` +
-              'window.close();' +
-            '</script>' +
-          '</head>' +
-        '</html>');
-      };
-
-      authenticator(fakeReq, fakeRes, fakeNext);
-    }
   }
 
   /*
@@ -336,6 +270,46 @@ class ApolloPassport {
         out[key] = obj[key];
       }
     return out;
+  }
+
+  /////////////////
+  // Middlewares //
+  /////////////////
+
+  popupScript(data) {
+    const json = JSON.stringify(data);
+
+    // Indentation for maintainence only
+    // Final string should be as small as possible to send over the wire
+    return '' +
+      '<html>' +
+        '<head>' +
+          '<script type="text/javascript">' +
+            `window.opener.postMessage('apolloPassport ${json}', window.location.origin);` +
+            'window.close();' +
+          '</script>' +
+        '</head>' +
+      '</html>';
+  }
+
+  expressMiddleware() {
+    var self = this;
+
+    return function ApolloPassportExpressMiddleware(req, res /*, next */) {
+      const optParts = req.url.split('?');
+      const pathParts = optParts[0].split('/');
+      const strategy = pathParts[1];
+      const action = pathParts[2];
+
+      self.apAuthenticate(strategy, req.query).then(data => {
+        res.setHeader('content-type', 'text/html');
+        res.end(self.popupScript(data), 'utf8');
+      }).catch(error => {
+        console.error(error);
+        res.status(500, 'Internal server error');
+        res.end();
+      });
+    }
   }
 
 }
