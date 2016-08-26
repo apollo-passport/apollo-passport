@@ -1,6 +1,6 @@
 {
   "name": "apollo-passport",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Apollo authentication via PassportJS and JWTs, with UI",
   "main": "lib/index.js",
   "scripts": {
