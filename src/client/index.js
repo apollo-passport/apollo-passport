@@ -1,11 +1,41 @@
+import gql from 'graphql-tag';
 import jwtDecode from 'jwt-decode';
 import _ from 'lodash';
 
+import openCenteredPopup from './popup';
+
 // TODO check and warn if regenerator-runtime not installed / present
+
+const discoveryQuery = gql`
+{
+  apDiscovery {
+    ROOT_URL,
+    authPath,
+    services {
+      name
+      label
+      type
+      clientId
+      scope
+      urlStart
+    }
+  }
+}
+`;
+
+// let instance;
 
 class ApolloPassport {
 
   constructor({ apolloClient }) {
+    /*
+    if (instance)
+      throw new Error("An ApolloPassport instance already exists");
+
+    // Should we expose this via a getInstance static method?
+    instance = this;
+    */
+
     this.apolloClient = apolloClient;
 
     this._subscribers = new Set();
@@ -23,13 +53,66 @@ class ApolloPassport {
       // constructor is a synchronous method, queue this for after.
       setTimeout(() => { this.assertToken() }, 1);
     }
+
+    window.addEventListener("message", this.receiveMessage.bind(this), false);
+
+    this.state = 'xxxSTATExxx';
+    this._runDiscovery();
   }
 
   assertToken() {
 
   }
 
-  /* modules */
+  _runDiscovery() {
+    const self = this;
+    self.apolloClient.query({ query: discoveryQuery }).then(({ errors, data }) => {
+      if (errors) {
+        console.error(errors);
+        throw new Error("Errors received from discovery query");
+      }
+
+      self.discovered = data.apDiscovery;
+
+      self.discovered.services.forEach(service => {
+        if (service.type === 'oauth' || service.type === 'oauth2') {
+          const url = service.urlStart +
+            "?client_id=" + service.clientId +
+            "&redirect_uri=" + self.discovered.ROOT_URL + self.discovered.authPath + service.name +
+            "&scope=" + service.scope +
+            "&state=" + self.state;
+
+          console.log(url);
+
+          // default width, height from meteor's oauth/oauth_browser.js
+          service.open = openCenteredPopup.bind(null, url, 651, 331);
+        }
+      });
+    });
+  }
+
+  ///////////////
+  // Messaging //
+  ///////////////
+
+  receiveMessage(event) {
+    if (event.origin !== window.location.origin ||
+        typeof event.data !== 'string' ||
+        event.data.substr(0, 15) !== 'apolloPassport ')
+      return;
+
+    const data = JSON.parse(event.data.substr(15));
+    if (data.type === 'loginComplete') {
+      this.loginComplete(data, data.key);
+    } else {
+      throw new Error("Unknown apolloPassport message: "
+        + event.data.substr(15));
+    }
+  }
+
+  /////////////
+  // Modules //
+  /////////////
 
   use(strategyName, Strategy) {
     this.strategies[strategyName] = new Strategy(this);
@@ -39,7 +122,9 @@ class ApolloPassport {
     _.extend(this, obj);
   }
 
-  /* actions */
+  ////////////////////
+  // Login / Logout //
+  ////////////////////
 
   loginStart() {
 
@@ -69,7 +154,9 @@ class ApolloPassport {
     this.setState({ data: {}, verified: false, error: null });
   }
 
-  /* state */
+  ///////////
+  // State //
+  ///////////
 
   stateHash(state) {
     return JSON.stringify(state || this._state);
@@ -106,6 +193,15 @@ class ApolloPassport {
     return this._state;
   }
 
+  emitState() {
+    const state = this.getState();
+    this._subscribers.forEach(callback => callback(state));
+  }
+
+  ////////////////////////
+  // Events (for state) //
+  ////////////////////////
+
   subscribe(callback) {
     this._subscribers.add(callback);
   }
@@ -114,12 +210,9 @@ class ApolloPassport {
     this._subscribers.delete(callback);
   }
 
-  emitState() {
-    const state = this.getState();
-    this._subscribers.forEach(callback => callback(state));
-  }
-
-  /* optional redux support */
+  ////////////////////////////
+  // Optional Redux support //
+  ////////////////////////////
 
   reducer() {
     var self = this;

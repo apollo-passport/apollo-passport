@@ -1,8 +1,11 @@
 import path from 'path';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
-import { mergeResolvers, mergeSchemas } from './utils/graphql-merge';
 import _ from 'lodash';
+
+import apAuthenticate from './authenticate';
+import { mergeResolvers, mergeSchemas } from './utils/graphql-merge';
+
 
 // Some super weird babel thing going on here, where path is not defined.
 const _path = path;
@@ -33,9 +36,23 @@ class ApolloPassport {
     this._winston = options.winston || require('winston');
     this._resolvers = require('./resolvers').default;
     this._schema = require('./schema').default;
-    this.passport = passport;
+    this._authenticators = {};
+    this.passport = options.passport || passport;
 
-    // const userTableName = options.userTableName || 'users';
+    this.apAuthenticate = apAuthenticate;
+
+    this.ROOT_URL = options.ROOT_URL || process.env.ROOT_URL
+      || (typeof ROOT_URL === 'string' && ROOT_URL);
+    if (!this.ROOT_URL)
+      throw new Error("No ROOT_URL set.  Please see Apollo Passport README");
+    if (!this.ROOT_URL.endsWith('/'))
+      this.ROOT_URL += '/';
+
+    this.authPath = options.authPath || 'ap-auth';
+    if (this.authPath.startsWith('/'))
+      this.authPath = this.authPath.substr(1);
+
+    this.authUrlRoot = this.ROOT_URL + this.authPath;
 
     this.assertIsDBDriver(options.db);
     this.db = options.db;
@@ -53,29 +70,55 @@ class ApolloPassport {
         + "new RethinkDBDriverDash(r)");
   }
 
-  use(name, Strategy, options, verify) {
-    if (!verify) {
+  use(nameArg, Strategy, options, verify) {
+    const parts = nameArg.split(':', 2);
+    const name = parts.pop(), namespace = parts.pop();
+
+    if (!verify && typeof options === 'function') {
       verify = options;
       options = null;
     }
 
     if (!options)
-      options = this.require(name, 'defaultOptions');
+      options = this.require(name, 'defaultOptions', namespace);
     if (!verify)
-      verify = this.require(name, 'verify');
+      verify = this.require(name, 'verify', namespace);
 
-    const instance = new Strategy(options, verify.bind(this));
+    if (namespace === 'oauth' || namespace === 'oauth2') {
+      if (!options.callbackURL)
+        options.callbackURL = this.authUrlRoot + '/' + name;
+      // if (!options.profileFields)
+      //  options.profileFields = // Passport converts these per strategy
+      //    [ 'id', 'username', 'displayName', 'gender', 'emails', 'photos' ];
+    }
+
+    // console.log(options);
+
+    const instance = new Strategy(options,
+      namespace ? verify.bind(this, name) : verify.bind(this));
     this.passport.use(instance);
-    //this._strategies.set(instance.name, instance);
 
-    const apWrapper = this.require(name, 'index');
-    this.strategies[name] = new apWrapper(this);
+    // this._strategies.set(instance.name, instance);
+    this.strategies[name] = instance;
 
-    const resolvers = this.require(name, 'resolvers');
-    this._resolvers = mergeResolvers(this._resolvers, resolvers);
+    // TODO, make local use this too
+    this._authenticators[name] = passport.authenticate(name);
 
-    const schema = this.require(name, 'schema');
-    this._schema = [ mergeSchemas([this._schema[0], schema[0]]) ];
+    // Not used yet except for options (TODO serve on auth URL)
+    if (options.scope)
+      this.passport.authenticate(name, { scope: options.scope });
+
+    const apWrapper = this.require(name, 'index', namespace, true /* optional */);
+    if (apWrapper)
+      this.strategies[name] = new apWrapper(this);
+
+    const resolvers = this.require(name, 'resolvers', namespace, true /* optional */);
+    if (resolvers)
+      this._resolvers = mergeResolvers(this._resolvers, resolvers);
+
+    const schema = this.require(name, 'schema', namespace, true /* optional */);
+    if (schema)
+      this._schema = [ mergeSchemas([this._schema[0], schema[0]]) ];
 
     // would also be nice to have a root query for available strategies
     // that could be used by the UI, and whether they are configured.
@@ -85,7 +128,9 @@ class ApolloPassport {
     _.extend(this, obj);
   }
 
-  /* resolve, require */
+  /////////////////////////////
+  // require() and resolve() //
+  /////////////////////////////
 
   resolve(module) {
     try {
@@ -99,11 +144,12 @@ class ApolloPassport {
          * This is a small hack to make dev work easier.
          */
         if (module.charAt(0) !== '.') {
-          const relative = _path.join(__dirname, '..', '..', module);
+          const relative = _path.join(__dirname, '..', '..', module.replace(/apollo-passport-/, ''));
           try {
             return require.resolve(relative);
           } catch (err) {
             if (err.message !== `Cannot find module '${relative}'`)
+              /* istanbul ignore next */
               throw err;
             return null;
           }
@@ -111,26 +157,37 @@ class ApolloPassport {
 
         return null;
       }
-      throw new err;
+      throw err;
     }
   }
 
-  require(strategy, module) {
+  require(strategy, module, namespace, optional) {
     // No static analysis, but that's ok for server side
     const fromPackage = `apollo-passport-${strategy}/lib/${module}`;
-    
+
     let resolved = this.resolve(fromPackage);
     if (!resolved)
       resolved = this.resolve(`./strategies/${strategy}/${module}`);
-    if (!resolved)
-      throw new Error(`Cannot find '${fromPackage}'.  `
-        + `Try 'npm i --save apollo-passport-${strategy}'.`);
+    if (!resolved && namespace)
+      resolved = this.resolve(`apollo-passport-${namespace}/lib/${module}`);
+    if (!resolved && namespace)
+      resolved = this.resolve(`./strategies/${namespace}/${module}`);
+
+    if (!resolved) {
+      if (optional)
+        return false;
+      else
+        throw new Error(`Cannot find '${fromPackage}'.  `
+          + `Try 'npm i --save apollo-passport-${strategy}'.`);
+    }
 
     const loaded = require(resolved);
     return loaded.__esModule ? loaded.default : loaded;
   }
 
-  /* users */
+  ///////////
+  // Users //
+  ///////////
 
   // accept 'emails', 'services' fields
   // return userId
@@ -144,20 +201,16 @@ class ApolloPassport {
     return userId;
   }
 
-  /* graphql, apollo */
+  //////////////////////
+  // GraphQL & Apollo //
+  //////////////////////
 
   schema() {
     return this._schema;
   }
 
   resolvers() {
-    return this._bindRootMutations(this._resolvers);
-  }
-
-  expressMiddleware(path = '/ap-auth') {
-    return function ApolloPassportExpressMiddleware(req, res, next) {
-      console.log('!!!', req.url);
-    }
+    return this._bindRootQueriesAndMutations(this._resolvers);
   }
 
   /*
@@ -206,17 +259,57 @@ class ApolloPassport {
    * function that is a sub-key of the RootMutation key will be bound
    * to the ApolloPassport instance (i.e. accessible via `this`).
    */
-  _bindRootMutations(obj) {
+  _bindRootQueriesAndMutations(obj) {
     const out = {};
     for (const key in obj)
-      if (key === 'RootMutation') {
-        out.RootMutation = {};
-        for (const key2 in obj.RootMutation)
-          out.RootMutation[key2] = obj.RootMutation[key2].bind(this);
+      if (key === 'RootMutation' || key === 'RootQuery') {
+        out[key] = {};
+        for (const key2 in obj[key])
+          out[key][key2] = obj[key][key2].bind(this);
       } else {
         out[key] = obj[key];
       }
     return out;
+  }
+
+  /////////////////
+  // Middlewares //
+  /////////////////
+
+  popupScript(data) {
+    const json = JSON.stringify(data);
+
+    // Indentation for maintainence only
+    // Final string should be as small as possible to send over the wire
+    return '' +
+      '<html>' +
+        '<head>' +
+          '<script type="text/javascript">' +
+            `window.opener.postMessage('apolloPassport ${json}', window.location.origin);` +
+            'window.close();' +
+          '</script>' +
+        '</head>' +
+      '</html>';
+  }
+
+  expressMiddleware() {
+    var self = this;
+
+    return function ApolloPassportExpressMiddleware(req, res /*, next */) {
+      const optParts = req.url.split('?');
+      const pathParts = optParts[0].split('/');
+      const strategy = pathParts[1];
+      const action = pathParts[2];
+
+      self.apAuthenticate(strategy, req.query).then(data => {
+        res.setHeader('content-type', 'text/html');
+        res.end(self.popupScript(data), 'utf8');
+      }).catch(error => {
+        console.error(error);
+        res.status(500, 'Internal server error');
+        res.end();
+      });
+    }
   }
 
 }

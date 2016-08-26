@@ -9,7 +9,7 @@ Copyright (c) 2016 by Gadi Cohen, released under the MIT license.
 
 ## Features
 
-* Super fast start with optional, opinionated resolvers for common tasks and databases.
+* Super fast start with optional, opinionated resolvers for common tasks and databases (see below).
 * JSON Web Tokens (JWTs) for stateless "sessions" making database user lookups on every query optional.
 
 * User interaction via GraphQL, not the framework.
@@ -17,10 +17,6 @@ Copyright (c) 2016 by Gadi Cohen, released under the MIT license.
   * Great for SPAs (single page apps) - no reloading or redirects to login; visible progress hints in UI.
   * Re-uses your existing transports.
   * No need for cookies and a cookie-free domain.
-
-* Current database support (PRs welcome, it's very modular):
-
-  * RethinkDB
 
 ## In Development
 
@@ -32,34 +28,61 @@ Lastly, this is my first time using passport, apollo/graphql and JWT, so PRs for
 
 ## Getting Started
 
-```sh
-$ npm i --save passport passport-local # etc
+Inspired by Meteor's account system, apollo-passport (optionally) comes with everything you need to get started quickly: an opinionated database structure, resolvers for various databases, and the pre-built UI components (just for react, for now) to interact with the user and even configure provider settings.
 
+The example below shows the most common options, and may be customized with:
+
+* Appropriate [database driver](https://www.npmjs.com/browse/keyword/apollo-passport-database-driver), e.g. `apollo-passport-rethinkdbdash`.
+* Appropriate [UI framework](https://www.npmjs.com/browse/keyword/apollo-passport-ui-framework), e.g. `apollo-passport-react`.
+* [Augmented strategies](https://www.npmjs.com/browse/keyword/apollo-passport-strategy), e.g. `apollo-passport-local`.
+* Regular [passport strategies](http://passportjs.org/) by class, e.g. `oath2:facebook`.
+
+```sh
+# PassportJS and relevant strategies
+$ npm i --save passport passport-local
+
+# Apollo Passport, and relevant packages as per aforementioned list.
 $ npm i --save apollo-passport \
   apollo-passport-local \
   apollo-passport-rethinkdbdash \
   apollo-passport-react
 ```
 
-### Quick Start
-
-Inspired by Meteor's account system, apollo-passport (optionally) comes with everything you need to get started quickly: an opinionated database structure, resolvers for various databases, and the pre-built UI components (just for react, for now) to interact with the user and even configure provider settings.
-
 **Server entry point**
+
+Note: the server side requires a `ROOT_URL` to be set.  This can be done via 1) environment variable, 2) a global / define, or 3) by passing a ROOT_URL option to `new ApolloPassport(options)`.
 
 ```js
 import ApolloPassport from 'apollo-passport';
 import RethinkDBDashDriver from 'apollo-passport-rethinkdbdash';
 import { Strategy as LocalStrategy } from 'passport-local';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
 
 const apolloPassport = new ApolloPassport({
   db: new RethinkDBDashDriver(r),  // "r" is your rethinkdbdash instance
   jwtSecret: 'my special secret'   // will be optional/automatic in the future
+  authPath: '/ap-auth'             // default: '/ap-auth', changing untested
 });
 
 // Pass the class, not the instance (i.e. no NEW), and no options for defaults
 // Make sure you setup strategies BEFORE calling getSchema, getResolvers below.
 apolloPassport.use('local', LocalStrategy /*, options */);
+
+// Example oauth2 strategy.  Meteor Accounts sytle configuration via UI coming soon...
+apolloPassport.use('oauth2:facebook', FacebookStrategy, {
+  clientID: '403859966407266',
+  clientSecret: 'fd3ec904596e0b775927a1052a3f7165',
+  // What permissions to request for this user
+  // https://developers.facebook.com/docs/facebook-login/permissions/overview
+  scope: [ 'public_profile', 'email' ],
+  // Which fields to request automatically on login
+  // https://developers.facebook.com/docs/graph-api/reference/v2.5/user
+  profileFields: [
+    'id', 'email',
+    'first_name', 'middle_name', 'last_name',
+    'gender', 'locale'
+  ]
+});
 
 // Merge these into your Apollo config however you usually do...
 const apolloOptions = {
@@ -67,8 +90,10 @@ const apolloOptions = {
   resolvers: apolloPassport.getResolvers();
 };
 
+// Augment apolloServer's entry point
 app.use('/graphql', apolloServer(apolloPassport.wrapOptions(apolloOptions)));
 
+// And add an entry-point for apollo passport.
 app.use('/ap-auth', apolloPassport.expressMiddleware());
 ```
 
@@ -124,6 +149,13 @@ const SomewhereInMyApp = () => (
 
 See [apollo-passport-react](https://www.npmjs.com/package/apollo-passport-react) for more details.
 
+## Things to know
+
+* During client load, a GraphQL query is sent to the server.  Consider enabling **query batching**.
+* As mentioned above, a `ROOT_URL` is required.  It's used to auto-generate the callbackUrl if none is specific.  By default, http://www.blah.com/ap-auth/facebook/callback (Meteor-style guided setup coming soon).
+
+[Let us know](https://github.com/apollo-passport/apollo-passport/issues/new) of any gotchas you come across so we can document them.
+
 ## API
 
 ### Server
@@ -132,9 +164,11 @@ See [apollo-passport-react](https://www.npmjs.com/package/apollo-passport-react)
 
 Instantiates a new ApolloPassport instance for your app, with the given options.
 
+Note: a number of options mention that are optional if custom `verify` functions are given.  This is gradually being phased out as we'd prefer to handle this on a framework level for consistency.
+
 **Required Options**
 
-* **db**: [ "dbName", dbInstance ]
+* **db**: <ApolloPassportDBDriver>
 
   This is required for the default simple setup, but is not required if you provide your own passport verify functions.
 
@@ -144,10 +178,15 @@ Instantiates a new ApolloPassport instance for your app, with the given options.
 
 **Customization Options**
 
-* **userTableName**
-* **mapUserToJWTProps**
-* **createTokenFromUser**
+* **mapUserToJWTProps**: default `user => ({ userId: user.id })`
+
+  Specify your own function to store custom data in the JWT token, e.g. `isAdmin`, etc.  This will be available both on server resolvers under `context.auth` and on the client as `apolloPassport.getState().data` (directly or via subscription, redux or react HOC).
+
+* **createTokenFromUser**: can be replaced if you know what you're doing (see src/index.js).
+
 * **winston**
+
+  We use [Winston](https://github.com/winstonjs/winston) for logging.  If you do too, you can pass in an existing `winston` instance and benefit from your existing transports.
 
 #### apolloPassport.use('strategyName', StrategyClass, <options>, <verifyCallback>)
 

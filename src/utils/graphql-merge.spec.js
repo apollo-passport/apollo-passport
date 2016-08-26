@@ -8,14 +8,15 @@ describe('graphql-merge', () => {
 
   describe('mergeResolvers', () => {
 
-    it('merges 1st level and RootMutations', () => {
+    it('merges all 1st-level keys, and 2nd-level RootQueries & RootMutations', () => {
 
-      const a = { a: 1, RootMutation: { a: 1 } };
-      const b = { b: 1, RootMutation: { b: 1 } };
+      const a = { a: 1, RootMutation: { c: 1 }, RootQuery: { e: 1 } };
+      const b = { b: 1, RootMutation: { d: 1 }, RootQuery: { f: 1 } };
 
       mergeResolvers(a, b).should.deep.equal({
         a: 1, b: 1,
-        RootMutation: { a: 1, b: 1 }
+        RootMutation: { c: 1, d: 1 },
+        RootQuery: { e: 1, f: 1 }
       });
 
     });
@@ -81,19 +82,19 @@ type SomethingElse {
 }
 
 
-type RootQueries {
+type RootQuery {
   someQuery (email: String!, password: String!): Something
   someOtherQuery (id: String): SomethingElse
 
 }
-type RootMutations {
+type RootMutation {
   someMutation (email: String!, password: String!): Something
   someOtherMutation (id: String): SomethingElse
 
 }
 schema {
-  query: RootQueries,
-  mutation: RootMutations
+  query: RootQuery,
+  mutation: RootMutation
 }
   `);
 
