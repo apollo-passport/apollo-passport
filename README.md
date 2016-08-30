@@ -202,7 +202,7 @@ Self evident.  Use as per the examples above.
 ## Why not use Meteor Accounts as a base?
 
 * PassportJS is to the go-to-auth for node apps and has
-  * 200+ authentication strategies
+  * 300+ authentication strategies
   * 8k stars on github
   * *Only* the auth layer, so easy to build upon
   * Strategies do a good job of normalizing data structure from different providers
