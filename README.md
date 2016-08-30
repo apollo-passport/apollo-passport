@@ -190,20 +190,14 @@ Note: a number of options mention that are optional if custom `verify` functions
 
 #### apolloPassport.use('strategyName', StrategyClass, <options>, <verifyCallback>)
 
-## TODO
-
-* tests
-* login
-* pluggable interface to allow other packages to provide/replace e.g. react ui login.
-* change internal resolve() to search first for installed packages e.g. apollo-passport-facebook (note, no need for an apollo-passport- copy of every package; we look at the inerhitted class for e.g. oauth2).
+Self evident.  Use as per the examples above.
 
 ## Roadmap
 
 * log user auths with ability for admins to see last x logins, failures, etc.
-
-## Alternative architecture
-
-Might switch to a different package for each strategy, allows for static analysis on client?
+* let user see list of all login tokens per device and revoke access.
+* service logins with same email are already automatically merged - need way to manually link/unlink accounts.
+* pluggable interface to allow other packages to provide/replace e.g. react ui login.
 
 ## Why not use Meteor Accounts as a base?
 
