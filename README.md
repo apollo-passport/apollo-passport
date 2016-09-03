@@ -38,14 +38,14 @@ The example below shows the most common options, and may be customized with:
 * Regular [passport strategies](http://passportjs.org/) by class, e.g. `oath2:facebook`.
 
 ```sh
-# PassportJS and relevant strategies
-$ npm i --save passport passport-local
-
-# Apollo Passport, and relevant packages as per aforementioned list.
+# Typical packages.  Choose database, strategies, ui from the list above.
 $ npm i --save apollo-passport \
   apollo-passport-local \
   apollo-passport-rethinkdbdash \
   apollo-passport-react
+
+# Other passport strategies (that don't have "augmented" apollo versions)
+$ npm i --save passport-facebook
 ```
 
 **Server entry point**
