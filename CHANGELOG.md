@@ -4,6 +4,9 @@ This project will adhere to [Semantic Versioning](http://semver.org/) from v1.0.
 We use the format from [keepachangelog.com](keepachangelog.com).
 
 ## [Unreleased]
+### Fixed
+* Client: oauth URL's were missing an intermediary `/`.
+
 ### Changed
 * `apolloPassport.use('name', AugmentedStrategy)` now accepts a newer format.  Now,
   AugmentedStrategies may also include their dependencies, so, e.g. no need to install

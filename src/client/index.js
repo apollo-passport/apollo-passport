@@ -78,7 +78,8 @@ class ApolloPassport {
         if (service.type === 'oauth' || service.type === 'oauth2') {
           const url = service.urlStart +
             "?client_id=" + service.clientId +
-            "&redirect_uri=" + self.discovered.ROOT_URL + self.discovered.authPath + service.name +
+            "&redirect_uri=" + self.discovered.ROOT_URL
+              + self.discovered.authPath + '/' + service.name +
             "&scope=" + service.scope +
             "&state=" + self.state;
 
