@@ -395,7 +395,6 @@ describe('apollo-passport', () => {
       it('handles errors', () => {
         const ap = new ApolloPassport(requiredOptions());
         ap.apAuthenticate = FakeReject(new Error('error'));
-        ap.popupScript = () => 'popupScript';
 
         const middleware = ap.expressMiddleware();
         const req = { url: '/ap-auth/facebook/callback' };
