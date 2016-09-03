@@ -79,10 +79,16 @@ class ApolloPassport {
       options = null;
     }
 
+    const isAugmented = Strategy.__isAugmented;
+
+    /*
+     * Now that AugmentedStrategies include their own deps, let's aim to replace
+     * this with an apolloPassport.addClass('oauth2') or something.
+     */
     if (!options)
-      options = this.require(name, 'defaultOptions', namespace);
+      options = this.require(name, 'defaultOptions', namespace, isAugmented /* optional */);
     if (!verify)
-      verify = this.require(name, 'verify', namespace);
+      verify = this.require(name, 'verify', namespace, isAugmented /* optional */);
 
     if (namespace === 'oauth' || namespace === 'oauth2') {
       if (!options.callbackURL)
@@ -93,6 +99,20 @@ class ApolloPassport {
     }
 
     // console.log(options);
+
+    if (isAugmented) {
+      const instance = new Strategy(this, options);
+      this.passport.use(instance.strategy);
+      this.strategies[name] = instance;  // check up on this, conflit with non-augmented
+      this._authenticators[name] = passport.authenticate(name); // options, etc. from below
+
+      if (instance.resolvers)
+        this._resolvers = mergeResolvers(this._resolvers, instance.resolvers);
+      if (instance.schema)
+        this._schema = [ mergeSchemas([this._schema[0], instance.schema[0]]) ];
+
+      return;
+    }
 
     const instance = new Strategy(options,
       namespace ? verify.bind(this, name) : verify.bind(this));

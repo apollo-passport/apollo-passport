@@ -4,6 +4,11 @@ This project will adhere to [Semantic Versioning](http://semver.org/) from v1.0.
 We use the format from [keepachangelog.com](keepachangelog.com).
 
 ## [Unreleased]
+### Changed
+* `apolloPassport.use('name', AugmentedStrategy)` now accepts a newer format.  Now,
+  AugmentedStrategies may also include their dependencies, so, e.g. no need to install
+  both `apollo-passport-local` *and* `passport-local`.  Also, we can do away with the
+  `this.require()` guessing since AugmentedStrategies explicitly include desired modules.
 
 ## [v0.0.3]
 ### Added

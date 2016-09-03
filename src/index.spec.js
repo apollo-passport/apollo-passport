@@ -149,6 +149,25 @@ describe('apollo-passport', () => {
       }
     }
 
+    it('accepts an AugmentedStrategy', () => {
+      class AugmentedStrategy {
+        constructor(apolloPassport, options) {
+          this.ap = apolloPassport;
+
+          function Strategy() {}
+          this.strategy = new Strategy();
+
+          this.resolvers = {};
+          this.schema = [''];
+        }
+      }
+      AugmentedStrategy.__isAugmented = true;
+
+      ap.use('augmented', AugmentedStrategy);
+
+      ap.strategies.augmented.should.be.an.instanceOf(AugmentedStrategy);
+    });
+
     it('calls passport.use(new Strategy(options, boundVerify))', () => {
       const options = {};
       const verify = function() { return { self: this } };
