@@ -196,7 +196,7 @@ describe('apollo-passport', () => {
 
     it('sets default callbackURL on oauth methods', () => {
       function FakeStrategy(options) {
-        options.callbackURL.should.equal(`${ap.authUrlRoot}/fake`)
+        options.callbackURL.should.equal(`${ap.authUrlRoot}/fake/callback`)
       }
       ap.use('oauth2:fake', FakeStrategy, {});
     });
