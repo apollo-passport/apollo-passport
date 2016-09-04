@@ -87,8 +87,8 @@ apolloPassport.use('oauth2:facebook', FacebookStrategy, {
 
 // Merge these into your Apollo config however you usually do...
 const apolloOptions = {
-  schema: apolloPassport.getSchema(),
-  resolvers: apolloPassport.getResolvers();
+  schema: apolloPassport.schema(),
+  resolvers: apolloPassport.resolvers();
 };
 
 // Augment apolloServer's entry point
@@ -104,7 +104,7 @@ app.use('/ap-auth', apolloPassport.expressMiddleware());
 // Configure Apollo
 import ApolloClient, { createNetworkInterface } from 'apollo-client';
 import ApolloPassport from 'apollo-passport/lib/client';
-import ApolloPassportLocal from 'apollo-passport-local/client';
+import ApolloPassportLocal from 'apollo-passport-local/lib/client';
 import apMiddleware from 'apollo-passport/lib/client/middleware';
 
 const networkInterface = createNetworkInterface('/graphql');
