@@ -4,6 +4,8 @@ This project will adhere to [Semantic Versioning](http://semver.org/) from v1.0.
 We use the format from [keepachangelog.com](keepachangelog.com).
 
 ## [Unreleased]
+
+## [v0.0.5]
 ### Changed
 * Client & server: append `/callback` to service path.
 
@@ -28,5 +30,6 @@ We use the format from [keepachangelog.com](keepachangelog.com).
 * We now require a `ROOT_URL` to be set (see README).
 
 [Unreleased]: https://github.com/apollo-passport/apollo-passport/compare/master...devel
+[v0.0.5]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.4...v0.0.5
 [v0.0.4]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.3...v0.0.4
 [v0.0.3]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.2...v0.0.3
