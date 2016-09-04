@@ -4,6 +4,8 @@ This project will adhere to [Semantic Versioning](http://semver.org/) from v1.0.
 We use the format from [keepachangelog.com](keepachangelog.com).
 
 ## [Unreleased]
+### Changed
+* Client & server: append `/callback` to service path.
 
 ## [v0.0.4]
 ### Fixed

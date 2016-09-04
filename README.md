@@ -69,6 +69,7 @@ const apolloPassport = new ApolloPassport({
 apolloPassport.use('local', LocalStrategy /*, options */);
 
 // Example oauth2 strategy.  Meteor Accounts sytle configuration via UI coming soon...
+// You need to authorize on facebook with http://.../ap-auth/facebook/callback
 apolloPassport.use('oauth2:facebook', FacebookStrategy, {
   clientID: '403859966407266',
   clientSecret: 'fd3ec904596e0b775927a1052a3f7165',

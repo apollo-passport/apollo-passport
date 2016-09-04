@@ -92,7 +92,7 @@ class ApolloPassport {
 
     if (namespace === 'oauth' || namespace === 'oauth2') {
       if (!options.callbackURL)
-        options.callbackURL = this.authUrlRoot + '/' + name;
+        options.callbackURL = this.authUrlRoot + '/' + name + '/callback';
       // if (!options.profileFields)
       //  options.profileFields = // Passport converts these per strategy
       //    [ 'id', 'username', 'displayName', 'gender', 'emails', 'photos' ];
