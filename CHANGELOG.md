@@ -4,6 +4,16 @@ This project will adhere to [Semantic Versioning](http://semver.org/) from v1.0.
 We use the format from [keepachangelog.com](keepachangelog.com).
 
 ## [Unreleased]
+### Changed
+* `defaultMapUserToJWTProps` now sees if the DBDriver supplies a
+  `mapUserToUserId` method and uses it preferentially, then try `user.id`,
+  `user._id`, and `user.userId` which covers vast majority of databases and
+  schemas.
+
+### Added
+* `defaultMapUserToJWTProps` now includes a `displayName` too, looking for
+  `user.displayName`, a `displayName` prop in any `service`, and finally,
+  the user's primary email address, if it exists.
 
 ## [v0.0.5]
 ### Changed

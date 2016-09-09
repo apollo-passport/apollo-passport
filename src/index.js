@@ -10,9 +10,27 @@ import { mergeResolvers, mergeSchemas } from './utils/graphql-merge';
 // Some super weird babel thing going on here, where path is not defined.
 const _path = path;
 
-// Non-standard, see
+// userId is non-standard, but superuseful.  Standards params are here:
 // http://www.iana.org/assignments/jwt/jwt.xhtml
-const defaultMapUserToJWTProps = user => ({ userId: user.id });
+function defaultMapUserToJWTProps(user) {
+  const userId = (this.db.mapUserToUserId && this.db.mapUserToUserId(user))
+    || user.id || user._id || user.userId;
+
+  let displayName = user.displayName;
+  if (!displayName && user.services) {
+    for (const service in user.services)
+      if (user.services[service].displayName) {
+        displayName = user.services[service].displayName;
+        break;
+      }
+  }
+  if (!displayName && user.username)
+    displayName = user.username;
+  if (!displayName && user.emails)
+    displayName = user.emails[0].address; // .split('@', 1)[0];
+
+  return { userId, displayName }
+}
 
 function defaultCreateTokenFromUser(user) {
   return jwt.sign(

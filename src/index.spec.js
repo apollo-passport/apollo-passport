@@ -1,3 +1,5 @@
+import 'regenerator-runtime/runtime';
+
 import chai from 'chai';
 import sinon from 'sinon';
 import sinonChai from 'sinon-chai';
@@ -24,10 +26,26 @@ describe('apollo-passport', () => {
   describe('default helpers', () => {
 
     describe('defaultMapUserToJWTProps', () => {
-      it('maps from a user record to an object with a userId field', () => {
-        const user = { id: 1 };
-        defaultMapUserToJWTProps(user).should.deep.equal({ userId: 1 });
+      it('maps userId', () => {
+        const map = defaultMapUserToJWTProps.bind({ db: {} });
+        const dbMap = defaultMapUserToJWTProps.bind({ db: {
+          mapUserToUserId: user => user.crazyId
+        } });
+
+        map({ id: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
+        map({ _id: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
+        map({ userId: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
+        dbMap({ crazyId: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
       });
+
+      it('maps displayName', () => {
+        const map = defaultMapUserToJWTProps.bind({ db: {} });
+
+        map({ id: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
+        map({ id: 1, username: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
+        map({ id: 1, services: { facebook: { displayName: 'a' }} }).should.deep.equal({ userId: 1, displayName: 'a' });
+        map({ id: 1, emails: [ { address: 'a' } ] }).should.deep.equal({ userId: 1, displayName: 'a' });
+      })
     });
 
     describe('defaultCreateTokenFromUser', () => {
