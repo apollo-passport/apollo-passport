@@ -26,6 +26,10 @@ Also, I probably won't have time to support this ;)  I'm using this, and it will
 
 Lastly, this is my first time using passport, apollo/graphql and JWT, so PRs for better practices are welcome.
 
+**Bugs, feature requests, etc**
+
+Top priority will be given to high quality PRs.  You can still help by reporting bugs, requesting features, etc, as long as you have realistic expectations :)  Consideration will be given to the number of users affected: See [open issues sorted by thumbs-up](https://github.com/apollo-passport/apollo-passport/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc).
+
 ## Getting Started
 
 Inspired by Meteor's account system, apollo-passport (optionally) comes with everything you need to get started quickly: an opinionated database structure, resolvers for various databases, and the pre-built UI components (just for react, for now) to interact with the user and even configure provider settings.
