@@ -13,8 +13,7 @@ const _path = path;
 // userId is non-standard, but superuseful.  Standards params are here:
 // http://www.iana.org/assignments/jwt/jwt.xhtml
 function defaultMapUserToJWTProps(user) {
-  const userId = (this.db.mapUserToUserId && this.db.mapUserToUserId(user))
-    || user.id || user._id || user.userId;
+  const userId = this.userId(user);
 
   let displayName = user.displayName;
   if (!displayName && user.services) {
@@ -78,6 +77,31 @@ class ApolloPassport {
     this.jwtSecret = jwtSecret;
     this.mapUserToJWTProps = options.mapUserToJWTProps || defaultMapUserToJWTProps;
     this.createTokenFromUser = options.createTokenFromUser || defaultCreateTokenFromUser;
+  }
+
+  /**
+   * Given a user object, return the userId field.  Preferentially uses
+   * DBDriver#mapUserToUserId if it exists, otherwise tries user.id,
+   * user._id and user.userId, which covers vast majority of cases.
+   *
+   * @param {object} user - a user object
+   * @return {string} userId - the userId field
+   */
+  userId(user) {
+    return (this.db.mapUserToUserId && this.db.mapUserToUserId(user))
+      || user.id || user._id || user.userId;
+  }
+
+  /**
+   * Sets user.id, user._id and user.userId.  Doubtful this will stick around,
+   * if you use it for anything other than `createUser`, please open an issue
+   * immediately.
+   */
+  setUserIdProp(user, userId) {
+    // TODO This is horrible.  Let's rather DBDriver#createUser(user, true) to
+    // return a user object with the id set, once we're sure nothing else uses
+    // this, then deprecated with a warning.
+    user.id = user._id = user.userId = userId;
   }
 
   assertIsDBDriver(db) {

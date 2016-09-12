@@ -5,15 +5,21 @@ We use the format from [keepachangelog.com](keepachangelog.com).
 
 ## [Unreleased]
 ### Changed
-* `defaultMapUserToJWTProps` now sees if the DBDriver supplies a
-  `mapUserToUserId` method and uses it preferentially, then try `user.id`,
-  `user._id`, and `user.userId` which covers vast majority of databases and
-  schemas.
+* `defaultMapUserToJWTProps` now relies on `userId()`,  below.
 
 ### Added
 * `defaultMapUserToJWTProps` now includes a `displayName` too, looking for
   `user.displayName`, a `displayName` prop in any `service`, and finally,
   the user's primary email address, if it exists.
+
+* `userId()` method that returns the userId field, using
+  `DBDriver#mapUserToUserId` preferentially if it exists, then trying
+  `user.id`, `user._id`, `user.userId` which coves vast majority of databases
+  and schemas.
+
+* `setUserIdProp()` that set's `user.id`, `user._id`, `user.userId`.  Doubtful
+  this will stick around.  If you need this anywhere other than for
+  `createUser()`, please open an issue immediately.
 
 ## [v0.0.5]
 ### Changed

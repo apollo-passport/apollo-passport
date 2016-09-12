@@ -47,7 +47,7 @@ export default function oauth2verify(strategy, accessToken, refreshToken, profil
         user.emails.push({ address: email });
 
       return this.createUser(user).then(userId => {
-        user.id = userId;
+        this.setUserIdProp(user, userId);
         return cb(null, user);
       }).catch(cb);
     }
@@ -56,12 +56,12 @@ export default function oauth2verify(strategy, accessToken, refreshToken, profil
     if (!user.services[provider]
         || JSON.stringify(user.services[provider]) !== JSON.stringify(profile)) {
 
-      this.db.assertUserServiceData(user.id, provider, profile);
+      this.db.assertUserServiceData(this.userId(user), provider, profile);
       user.services[provider] = profile;
     }
     if (!user.emails) user.emails = [];
     if (email && (!_.find(user.emails, { address: email }))) {
-      this.db.assertUserEmailData(user.id, email);
+      this.db.assertUserEmailData(this.userId(user), email);
       user.emails.push({ address: email });
     }
 
