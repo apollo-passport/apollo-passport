@@ -25,26 +25,42 @@ describe('apollo-passport', () => {
 
   describe('default helpers', () => {
 
-    describe('defaultMapUserToJWTProps', () => {
-      it('maps userId', () => {
-        const map = defaultMapUserToJWTProps.bind({ db: {} });
-        const dbMap = defaultMapUserToJWTProps.bind({ db: {
-          mapUserToUserId: user => user.crazyId
-        } });
+    describe('userId()', () => {
+      let options, ap;
 
-        map({ id: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
-        map({ _id: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
-        map({ userId: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
-        dbMap({ crazyId: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
+      options = requiredOptions();
+      ap = new ApolloPassport(options);
+
+      ap.userId({ id: 1 }).should.equal(1);
+      ap.userId({ _id: 1 }).should.equal(1);
+      ap.userId({ userId: 1 }).should.equal(1);
+
+      options.db.mapUserToUserId = user => user.crazyId;
+      ap = new ApolloPassport(options);
+
+      ap.userId({ crazyId: 1 }).should.equal(1);
+    });
+
+    describe('setUserIdProp', () => {
+      const ap = new ApolloPassport(requiredOptions());
+      const user = {};
+      ap.setUserIdProp(user, 1);
+      user.id.should.equal(1);
+    });
+
+    describe('defaultMapUserToJWTProps', () => {
+      const context = { userId: x => x.id };
+      const map = defaultMapUserToJWTProps.bind(context);
+
+      it('maps userId', () => {
+        map({ id: 1 }).userId.should.equal(1);
       });
 
       it('maps displayName', () => {
-        const map = defaultMapUserToJWTProps.bind({ db: {} });
-
-        map({ id: 1, displayName: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
-        map({ id: 1, username: 'a' }).should.deep.equal({ userId: 1, displayName: 'a' });
-        map({ id: 1, services: { facebook: { displayName: 'a' }} }).should.deep.equal({ userId: 1, displayName: 'a' });
-        map({ id: 1, emails: [ { address: 'a' } ] }).should.deep.equal({ userId: 1, displayName: 'a' });
+        map({ displayName: 'a' }).displayName.should.equal('a');
+        map({ username: 'a' }).displayName.should.equal('a');
+        map({ services: { facebook: { displayName: 'a' }} }).displayName.should.equal('a');
+        map({ emails: [ { address: 'a' } ] }).displayName.should.equal('a');
       })
     });
 

@@ -11,6 +11,11 @@ chai.use(sinonChai);
 
 describe('apollo-passport - strategies - oauth2 - verify', () => {
 
+  const minContext = {
+    userId: user => user.id,
+    setUserIdProp: (user, id) => { user.id = id }
+  };
+
   it('warns if strategy != provider', () => {
     sinon.spy(console, 'warn');
 
@@ -58,6 +63,7 @@ describe('apollo-passport - strategies - oauth2 - verify', () => {
     it('creates a user if not returned (without email)', (done) => {
       const profile = { id: 'profileId', provider: 'provider' };
       const context = {
+        ...minContext,
         db: {
           fetchUserByServiceIdOrEmail(provider, id, email) {
             return {
@@ -92,6 +98,7 @@ describe('apollo-passport - strategies - oauth2 - verify', () => {
         emails: [ { value: 'me@me.com' } ]
       };
       const context = {
+        ...minContext,
         db: {
           fetchUserByServiceIdOrEmail(provider, id, email) {
             return {
@@ -123,6 +130,7 @@ describe('apollo-passport - strategies - oauth2 - verify', () => {
     it('adds provider profile if data if it didn\'t exist before', (done) => {
       const profile = { id: 'profileId', provider: 'provider', something: true };
       const context = {
+        ...minContext,
         db: {
           fetchUserByServiceIdOrEmail(provider, id, email) {
             return {
@@ -159,6 +167,7 @@ describe('apollo-passport - strategies - oauth2 - verify', () => {
     it('updates provider profile if data has changed', (done) => {
       const profile = { id: 'profileId', provider: 'provider', something: true };
       const context = {
+        ...minContext,
         db: {
           fetchUserByServiceIdOrEmail(provider, id, email) {
             return {
@@ -196,6 +205,7 @@ describe('apollo-passport - strategies - oauth2 - verify', () => {
         emails: [ { value: 'me2@me.com' } ]
       };
       const context = {
+        ...minContext,
         db: {
           fetchUserByServiceIdOrEmail(provider, id, email) {
             return {
@@ -233,6 +243,7 @@ describe('apollo-passport - strategies - oauth2 - verify', () => {
         emails: [ { value: 'me2@me.com' } ]
       };
       const context = {
+        ...minContext,
         db: {
           fetchUserByServiceIdOrEmail(provider, id, email) {
             return {
