@@ -4,6 +4,8 @@ This project will adhere to [Semantic Versioning](http://semver.org/) from v1.0.
 We use the format from [keepachangelog.com](keepachangelog.com).
 
 ## [Unreleased]
+
+## [v0.0.7]
 ### Changed
 * `defaultMapUserToJWTProps` now relies on `userId()`,  below.
 
@@ -20,6 +22,9 @@ We use the format from [keepachangelog.com](keepachangelog.com).
 * `setUserIdProp()` that set's `user.id`, `user._id`, `user.userId`.  Doubtful
   this will stick around.  If you need this anywhere other than for
   `createUser()`, please open an issue immediately.
+
+## [v0.0.6]
+* This is the same as v0.0.7, which had to be bumped.
 
 ## [v0.0.5]
 ### Changed
@@ -46,6 +51,8 @@ We use the format from [keepachangelog.com](keepachangelog.com).
 * We now require a `ROOT_URL` to be set (see README).
 
 [Unreleased]: https://github.com/apollo-passport/apollo-passport/compare/master...devel
+[v0.0.7]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.5...v0.0.7
+[v0.0.6]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.5...v0.0.6
 [v0.0.5]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.4...v0.0.5
 [v0.0.4]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.3...v0.0.4
 [v0.0.3]: https://github.com/apollo-passport/apollo-passport/compare/v0.0.2...v0.0.3
