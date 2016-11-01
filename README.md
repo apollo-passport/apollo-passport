@@ -4,8 +4,16 @@ Full stack Apollo and PassportJS integration, inspired by Meteor Accounts.
 
 [![npm](https://img.shields.io/npm/v/apollo-passport.svg?maxAge=2592000)](https://www.npmjs.com/package/apollo-passport) [![Circle CI](https://circleci.com/gh/apollo-passport/apollo-passport.svg?style=shield)](https://circleci.com/gh/apollo-passport/apollo-passport) [![Coverage Status](https://coveralls.io/repos/github/apollo-passport/apollo-passport/badge.svg?branch=master)](https://coveralls.io/github/apollo-passport/apollo-passport?branch=master) ![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-
 Copyright (c) 2016 by Gadi Cohen, released under the MIT license.
+
+## IMPORTANT NOTICE
+
+No further work is being done on this project.  We are busy merging with
+`apollo-accounts` into the new
+[`js-accounts`](https://github.com/js-accounts/accounts) framework.
+
+You can still use `apollo-passport` if you need something in the meantime,
+but all future work continues in `js-accounts`.
 
 ## Features
 
