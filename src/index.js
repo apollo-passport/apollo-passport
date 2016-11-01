@@ -174,13 +174,23 @@ class ApolloPassport {
     if (apWrapper)
       this.strategies[name] = new apWrapper(this);
 
-    const resolvers = this.require(name, 'resolvers', namespace, true /* optional */);
+    if (apWrapper) {
+      // back compat, new modules should include these without us needing to check
+      if (!apWrapper.resolvers)
+        apWrapper.resolvers = this.require(name, 'resolvers', namespace, true /* optional */);
+      if (!apWrapper.schema)
+        apWrapper.schema = this.require(name, 'schema', namespace, true /* optional */);
+    }
+
+    /*
+    const resolvers = this.require(name, 'resolvers', namespace, true /* optional *//*);
     if (resolvers)
       this._resolvers = mergeResolvers(this._resolvers, resolvers);
 
-    const schema = this.require(name, 'schema', namespace, true /* optional */);
+    const schema = this.require(name, 'schema', namespace, true /* optional *//*);
     if (schema)
       this._schema = [ mergeSchemas([this._schema[0], schema[0]]) ];
+    */
 
     // would also be nice to have a root query for available strategies
     // that could be used by the UI, and whether they are configured.
@@ -268,11 +278,25 @@ class ApolloPassport {
   //////////////////////
 
   schema() {
-    return this._schema;
+    const schemas = Array.from(this._schema);
+
+    for (const key in this.strategies) {
+      if (this.strategies[key].schema)
+        schemas.push(this.strategies[key].schema[0]);
+    }
+
+    return [ mergeSchemas(schemas) ];
   }
 
   resolvers() {
-    return this._bindRootQueriesAndMutations(this._resolvers);
+    let resolvers = mergeResolvers({}, this._resolvers);
+
+    for (const key in this.strategies) {
+      if (this.strategies[key].resolvers)
+        resolvers = mergeResolvers(resolvers, this.strategies[key].resolvers);
+    }
+
+    return this._bindRootQueriesAndMutations(resolvers);
   }
 
   /*

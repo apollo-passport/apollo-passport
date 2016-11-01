@@ -20,12 +20,17 @@ type apDiscovery {
   services: [ apService ]
 }
 
-type RootQueries {
+type RootQuery {
   apDiscovery: apDiscovery
 }
 
+type RootMutation {
+
+}
+
 schema {
-  query: RootQuery
+  query: RootQuery,
+  mutation: RootMutation
 }
 `;
 

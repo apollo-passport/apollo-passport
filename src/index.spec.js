@@ -325,16 +325,17 @@ describe('apollo-passport', () => {
   //////////////////////
 
   describe('schema()', () => {
-    it('returns this._schema', () => {
+    it('returns at least this._schema', () => {
       const ap = new ApolloPassport(requiredOptions());
-      ap.schema().should.equal(ap._schema);
+      ap.schema()[0].replace(/\s/g, '')
+        .should.equal(ap._schema[0].replace(/\s/g, ''));
     });
   });
 
   describe('resolvers()', () => {
     it('returns a bound version of this._resolvers', () => {
       const ap = new ApolloPassport(requiredOptions());
-      ap._resolvers = { a: 1 };
+      ap._resolvers = { a: 1, RootMutation: {}, RootQuery: {} };
       ap._bindRootQueriesAndMutations = function(x) { return { ...x, _bound: 1 }; };
       ap.resolvers().should.deep.equal({ ...ap._resolvers, _bound: 1 });
     });
