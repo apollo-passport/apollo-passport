@@ -6,7 +6,7 @@ Full stack Apollo and PassportJS integration, inspired by Meteor Accounts.
 
 Copyright (c) 2016 by Gadi Cohen, released under the MIT license.
 
-## IMPORTANT NOTICE
+## IMPORTANT NOTICE (DEPRECATION)
 
 No further work is being done on this project.  We are busy merging with
 `apollo-accounts` into the new
