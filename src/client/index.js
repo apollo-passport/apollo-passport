@@ -73,22 +73,23 @@ class ApolloPassport {
       }
 
       self.discovered = data.apDiscovery;
+      if (self.discovered.services){
+        self.discovered.services.forEach(service => {
+          if (service.type === 'oauth' || service.type === 'oauth2') {
+            const url = service.urlStart +
+              "?client_id=" + service.clientId +
+              "&redirect_uri=" + self.discovered.ROOT_URL +
+                self.discovered.authPath + '/' + service.name + '/callback' +
+              "&scope=" + service.scope +
+              "&state=" + self.state;
 
-      self.discovered.services.forEach(service => {
-        if (service.type === 'oauth' || service.type === 'oauth2') {
-          const url = service.urlStart +
-            "?client_id=" + service.clientId +
-            "&redirect_uri=" + self.discovered.ROOT_URL +
-              self.discovered.authPath + '/' + service.name + '/callback' +
-            "&scope=" + service.scope +
-            "&state=" + self.state;
+            console.log(url);
 
-          console.log(url);
-
-          // default width, height from meteor's oauth/oauth_browser.js
-          service.open = openCenteredPopup.bind(null, url, 651, 331);
-        }
-      });
+            // default width, height from meteor's oauth/oauth_browser.js
+            service.open = openCenteredPopup.bind(null, url, 651, 331);
+          }
+        });
+      }
     });
   }
 
